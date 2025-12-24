@@ -1,0 +1,95 @@
+/* auth-pages.css */
+/* Load after styles.css */
+
+.auth-wrap {
+  padding: 54px 18px 70px;
+  background: #f7f8fb;
+}
+
+.auth-card {
+  max-width: 520px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 30px 22px;
+  border: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 12px 26px rgba(0,0,0,0.06);
+  animation: authFade 180ms ease-out;
+}
+
+@keyframes authFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.auth-title {
+  margin: 0;
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--msu-navy);
+}
+
+.auth-subtitle {
+  margin: 10px 0 18px;
+  text-align: center;
+  font-weight: 700;
+  color: rgba(0, 45, 114, 0.75);
+}
+
+.auth-card label {
+  display: block;
+  margin-top: 12px;
+  font-weight: 800;
+  color: rgba(0, 45, 114, 0.92);
+}
+
+.auth-card input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  margin-top: 6px;
+  border: 1px solid rgba(0,0,0,0.18);
+  border-radius: 10px;
+  font-family: inherit;
+}
+
+.auth-card button {
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px 18px;
+  font-weight: 900;
+  background: var(--msu-orange);
+  color: var(--msu-white);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.auth-card button:hover {
+  filter: brightness(1.03);
+}
+
+.auth-card .msg {
+  margin-top: 12px;
+  text-align: center;
+  font-weight: 800;
+  color: rgba(0,0,0,0.65);
+}
+
+.auth-link {
+  margin-top: 14px;
+  text-align: center;
+  font-weight: 700;
+  color: rgba(0,0,0,0.65);
+}
+
+.auth-link a {
+  color: var(--msu-navy);
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.auth-link a:hover {
+  color: var(--msu-orange);
+}

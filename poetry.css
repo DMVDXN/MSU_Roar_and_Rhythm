@@ -1,0 +1,87 @@
+/* poetry.css */
+/* Load after styles.css */
+
+.page {
+  padding: 54px 18px 70px;
+  background: #f7f8fb;
+}
+
+.page-card {
+  max-width: 980px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 34px 22px;
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+.page-title {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--msu-navy);
+  text-align: center;
+}
+
+.page-subtitle {
+  margin: 10px 0 22px;
+  text-align: center;
+  font-weight: 700;
+  color: rgba(0, 45, 114, 0.75);
+}
+
+.list {
+  max-width: 900px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.post {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 14px;
+  padding: 18px 18px 16px;
+  margin-top: 14px;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.05);
+}
+
+.post h3 {
+  margin: 0 0 8px;
+  color: var(--msu-navy);
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+.meta {
+  font-size: 0.95rem;
+  color: rgba(0,0,0,0.55);
+  margin-bottom: 10px;
+}
+
+.body {
+  white-space: pre-wrap;
+  line-height: 1.65;
+  color: rgba(0, 45, 114, 0.92);
+  font-size: 1.02rem;
+}
+
+.msg {
+  margin-top: 14px;
+  text-align: center;
+  font-weight: 800;
+  color: rgba(0,0,0,0.65);
+}
+
+@media (max-width: 520px) {
+  .page-card {
+    padding: 22px 14px;
+  }
+
+  .post {
+    padding: 16px 14px 14px;
+  }
+
+  .post h3 {
+    font-size: 1.2rem;
+  }
+}

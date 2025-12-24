@@ -1,0 +1,96 @@
+/* submit.css */
+/* Load after styles.css */
+
+.page {
+  padding: 54px 18px 70px;
+  background: #f7f8fb;
+}
+
+.page-card {
+  max-width: 980px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 34px 22px;
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+.page-title {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--msu-navy);
+  text-align: center;
+}
+
+.page-subtitle {
+  margin: 10px 0 22px;
+  text-align: center;
+  font-weight: 700;
+  color: rgba(0, 45, 114, 0.75);
+}
+
+.submit-card {
+  max-width: 720px;
+  margin: 0 auto;
+  background: #ffffff;
+  padding: 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(0,0,0,0.08);
+  text-align: left;
+}
+
+.submit-card label {
+  display: block;
+  margin-top: 12px;
+  font-weight: 800;
+  color: rgba(0, 45, 114, 0.92);
+}
+
+.submit-card input,
+.submit-card select,
+.submit-card textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  margin-top: 6px;
+  border: 1px solid rgba(0,0,0,0.18);
+  border-radius: 10px;
+  font-family: inherit;
+}
+
+.submit-card textarea {
+  min-height: 140px;
+  resize: vertical;
+}
+
+.submit-card button {
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px 18px;
+  font-weight: 900;
+  background: var(--msu-orange);
+  color: var(--msu-white);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.submit-card button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.hint {
+  display: block;
+  margin-top: 6px;
+  color: rgba(0,0,0,0.65);
+  font-size: 0.9em;
+}
+
+.msg {
+  margin-top: 12px;
+  font-weight: 800;
+  color: rgba(0,0,0,0.65);
+  text-align: center;
+}

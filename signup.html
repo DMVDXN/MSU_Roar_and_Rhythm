@@ -1,45 +1,62 @@
+<!-- signup.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Sign Up - Roar & Rhythm</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="auth-pages.css">
 </head>
 <body>
-  <header>
-    <div class="logo">
-      <img src="assets/logo.png" alt="Roar & Rhythm Logo">
-      <h1>Roar & Rhythm</h1>
-      <p>Morgan State University</p>
-    </div>
-    <nav>
-      <a href="index.html">Home</a>
+
+  <header class="topbar">
+    <a class="brand" href="index.html">
+      <img class="brand-logo" src="assets/logo.png" alt="Roar & Rhythm Logo">
+      <span class="brand-name">Roar & Rhythm</span>
+    </a>
+
+    <form class="topbar-search" role="search" action="#" onsubmit="return false;">
+      <span class="search-icon">🔎</span>
+      <input class="search-input" type="search" placeholder="Search for poetry, music, art..." aria-label="Search">
+    </form>
+
+    <nav class="topbar-nav">
       <a href="poetry.html">Poetry</a>
       <a href="music.html">Music</a>
       <a href="art.html">Art</a>
       <a href="submit.html">Submit</a>
-      <a href="login.html">Login</a>
     </nav>
+
+    <div class="topbar-auth">
+      <a id="navLogin" class="pill pill-ghost" href="login.html">Login</a>
+      <a id="navSignup" class="pill pill-solid" href="signup.html">Sign Up</a>
+
+      <a id="navProfile" class="pill pill-ghost" href="profile.html" style="display:none;">Profile</a>
+      <a id="navLogout" class="pill pill-ghost" href="logout.html" style="display:none;">Logout</a>
+    </div>
   </header>
 
   <main>
-    <section class="hero">
-      <h2>Create Account</h2>
+    <section class="auth-wrap">
+      <div class="auth-card">
+        <h2 class="auth-title">Sign Up</h2>
+        <p class="auth-subtitle">Create your account to submit and manage your work.</p>
 
-      <div class="submit-card">
         <form id="signupForm">
           <label for="email">Email</label>
-          <input id="email" type="email" required />
+          <input id="email" type="email" required autocomplete="email">
 
           <label for="password">Password</label>
-          <input id="password" type="password" minlength="6" required />
+          <input id="password" type="password" minlength="6" required autocomplete="new-password">
 
-          <button type="submit" id="signupBtn">Sign Up</button>
+          <button type="submit" id="signupBtn">Create account</button>
           <p id="msg" class="msg"></p>
-          <p style="margin-top:12px;">
-            Already have an account? <a href="login.html">Login</a>
-          </p>
         </form>
+
+        <p class="auth-link">
+          Already have an account?
+          <a id="toLogin" href="login.html">Login</a>
+        </p>
       </div>
     </section>
   </main>
@@ -47,6 +64,13 @@
   <footer>
     <p>© 2025 Roar & Rhythm | Morgan State University</p>
   </footer>
+
+  <script type="module">
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get("next");
+    const a = document.getElementById("toLogin");
+    if (a && next) a.href = `login.html?next=${encodeURIComponent(next)}`;
+  </script>
 
   <script type="module" src="auth.js"></script>
 </body>
