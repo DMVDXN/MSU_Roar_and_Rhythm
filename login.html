@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Poetry - Roar & Rhythm</title>
+  <title>Login - Roar & Rhythm</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -18,18 +18,29 @@
       <a href="music.html">Music</a>
       <a href="art.html">Art</a>
       <a href="submit.html">Submit</a>
-      <a href="logout.html">Logout</a>
-
+      <a href="login.html">Login</a>
     </nav>
   </header>
 
   <main>
     <section class="hero">
-      <h2>Poetry</h2>
-      <p>Approved submissions appear here.</p>
+      <h2>Login</h2>
 
-      <div id="list" class="list"></div>
-      <p id="msg" class="msg"></p>
+      <div class="submit-card">
+        <form id="loginForm">
+          <label for="email">Email</label>
+          <input id="email" type="email" required />
+
+          <label for="password">Password</label>
+          <input id="password" type="password" required />
+
+          <button type="submit" id="loginBtn">Login</button>
+          <p id="msg" class="msg"></p>
+          <p style="margin-top:12px;">
+            No account? <a href="signup.html">Create one</a>
+          </p>
+        </form>
+      </div>
     </section>
   </main>
 
@@ -37,6 +48,6 @@
     <p>© 2025 Roar & Rhythm | Morgan State University</p>
   </footer>
 
-  <script type="module" src="poetry.js"></script>
+  <script type="module" src="auth.js"></script>
 </body>
 </html>

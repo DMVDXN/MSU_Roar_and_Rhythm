@@ -39,12 +39,31 @@ function getFileExt(filename) {
   return parts.length > 1 ? parts.pop().toLowerCase() : "png";
 }
 
+async function requireUser() {
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error) {
+    setMsg(`Auth error: ${error.message}`);
+    return null;
+  }
+
+  if (!data || !data.user) {
+    window.location.href = "login.html";
+    return null;
+  }
+
+  return data.user;
+}
+
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   setLoading(true);
   setMsg("");
 
   try {
+    const user = await requireUser();
+    if (!user) return;
+
     const type = typeEl.value;
     const title = titleEl.value.trim();
 
@@ -89,8 +108,7 @@ form.addEventListener("submit", async (e) => {
       const filename = `${crypto.randomUUID()}.${ext}`;
       const path = `uploads/${filename}`;
 
-      const { error: uploadError } = await supabase
-        .storage
+      const { error: uploadError } = await supabase.storage
         .from("images")
         .upload(path, file, { upsert: false });
 
@@ -103,18 +121,17 @@ form.addEventListener("submit", async (e) => {
       image_url = data.publicUrl;
     }
 
-    const { error: insertError } = await supabase
-      .from("posts")
-      .insert([
-        {
-          type,
-          title,
-          body_text,
-          song_url,
-          image_url,
-          status: "pending",
-        },
-      ]);
+    const { error: insertError } = await supabase.from("posts").insert([
+      {
+        user_id: user.id,
+        type,
+        title,
+        body_text,
+        song_url,
+        image_url,
+        status: "pending",
+      },
+    ]);
 
     if (insertError) {
       setMsg(`Submit failed: ${insertError.message}`);

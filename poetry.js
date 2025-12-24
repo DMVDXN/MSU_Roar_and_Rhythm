@@ -1,3 +1,5 @@
+console.log("poetry.js LOADED");
+
 import { supabase } from "./supabase.js";
 
 const list = document.getElementById("list");
