@@ -98,3 +98,31 @@ footer {
   font-weight: bold;
 }
 
+.list {
+  max-width: 900px;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.post {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 14px;
+}
+
+.post h3 {
+  margin: 0 0 6px;
+}
+
+.meta {
+  font-size: 0.9em;
+  color: rgba(0,0,0,0.65);
+  margin-bottom: 10px;
+}
+
+.body {
+  white-space: normal;
+  line-height: 1.5;
+}
