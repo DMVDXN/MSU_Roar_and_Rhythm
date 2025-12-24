@@ -38,6 +38,13 @@
   flex: 1;
 }
 
+.profile-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .profile-name {
   margin: 0;
   color: var(--msu-navy);
@@ -45,9 +52,15 @@
   font-size: 1.6rem;
 }
 
+.profile-handle {
+  margin: 8px 0 0;
+  color: rgba(0,0,0,0.72);
+  font-weight: 900;
+}
+
 .profile-email {
   margin: 6px 0 0;
-  color: rgba(0,0,0,0.60);
+  color: rgba(0,0,0,0.55);
   font-weight: 800;
 }
 
@@ -55,6 +68,101 @@
   margin: 10px 0 0;
   color: rgba(0, 45, 114, 0.85);
   font-weight: 700;
+}
+
+.profile-website {
+  display: inline-block;
+  margin-top: 10px;
+  font-weight: 900;
+  color: var(--msu-orange);
+  text-decoration: none;
+}
+
+.profile-website:hover {
+  text-decoration: underline;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-weight: 900;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  text-decoration: none;
+}
+
+.btn-solid {
+  background: var(--msu-orange);
+  color: var(--msu-white);
+  border-color: var(--msu-orange);
+}
+
+.btn-outline {
+  color: var(--msu-navy);
+  border-color: rgba(0, 45, 114, 0.30);
+  background: rgba(0, 45, 114, 0.05);
+}
+
+.btn-ghost {
+  color: rgba(0,0,0,0.70);
+  border-color: rgba(0,0,0,0.18);
+  background: transparent;
+}
+
+.btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.edit-panel {
+  margin-top: 14px;
+  border-top: 1px solid rgba(0,0,0,0.08);
+  padding-top: 16px;
+}
+
+.edit-form {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.field {
+  margin-top: 12px;
+}
+
+.field label {
+  display: block;
+  font-weight: 900;
+  color: rgba(0, 45, 114, 0.92);
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 10px;
+  margin-top: 6px;
+  border: 1px solid rgba(0,0,0,0.18);
+  border-radius: 12px;
+  font-family: inherit;
+}
+
+.help {
+  margin-top: 6px;
+  color: rgba(0,0,0,0.60);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.edit-actions {
+  margin-top: 14px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .profile-stats {
@@ -113,11 +221,7 @@
   color: rgba(0,0,0,0.65);
 }
 
-.profile-feed {
-  margin-top: 14px;
-}
-
-/* Feed cards (poetry + music) */
+/* Feed cards */
 .profile-post {
   border: 1px solid rgba(0,0,0,0.08);
   border-radius: 14px;
@@ -155,21 +259,6 @@
   background: rgba(0,0,0,0.03);
 }
 
-.badge.approved {
-  border-color: rgba(0, 150, 80, 0.25);
-  background: rgba(0, 150, 80, 0.08);
-}
-
-.badge.pending {
-  border-color: rgba(244, 121, 32, 0.28);
-  background: rgba(244, 121, 32, 0.10);
-}
-
-.badge.rejected {
-  border-color: rgba(176, 0, 32, 0.25);
-  background: rgba(176, 0, 32, 0.08);
-}
-
 .profile-body {
   white-space: pre-wrap;
   line-height: 1.65;
@@ -194,7 +283,7 @@
   filter: brightness(1.04);
 }
 
-/* Art grid inside profile */
+/* Art grid */
 .profile-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

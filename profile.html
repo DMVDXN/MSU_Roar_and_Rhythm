@@ -27,7 +27,6 @@
       <a href="submit.html">Submit</a>
     </nav>
 
-    <!-- Use your logged-out + logged-in header block here (profile icon + hamburger) -->
     <div class="topbar-auth">
       <div id="authLoggedOut" class="auth-logged-out">
         <a class="pill pill-ghost" href="login.html">Login</a>
@@ -65,14 +64,54 @@
   <main>
     <section class="profile-wrap">
       <div class="profile-card">
+
         <div class="profile-head">
           <div class="profile-avatar-big" id="profileAvatarBig">U</div>
 
           <div class="profile-head-text">
-            <h2 class="profile-name" id="profileName">Your Profile</h2>
+            <div class="profile-head-row">
+              <h2 class="profile-name" id="profileDisplayName">My Profile</h2>
+              <button id="editBtn" class="btn btn-outline" type="button">Edit profile</button>
+            </div>
+
+            <p class="profile-handle" id="profileUsername"></p>
             <p class="profile-email" id="profileEmail"></p>
             <p class="profile-bio" id="profileBio">Your submissions and activity live here.</p>
+
+            <a id="profileWebsite" class="profile-website" href="#" target="_blank" rel="noopener noreferrer" style="display:none;"></a>
           </div>
+        </div>
+
+        <div id="editPanel" class="edit-panel" style="display:none;">
+          <form id="profileForm" class="edit-form">
+            <div class="field">
+              <label for="display_name">Display name</label>
+              <input id="display_name" type="text" maxlength="40" placeholder="Example: Daniel O.">
+            </div>
+
+            <div class="field">
+              <label for="username">Username</label>
+              <input id="username" type="text" maxlength="24" placeholder="Example: danielon">
+              <div class="help">Letters, numbers, underscore. 3 to 24 chars. Must be unique.</div>
+            </div>
+
+            <div class="field">
+              <label for="bio">Bio</label>
+              <textarea id="bio" rows="4" maxlength="240" placeholder="A short bio (max 240 chars)"></textarea>
+            </div>
+
+            <div class="field">
+              <label for="website">Website</label>
+              <input id="website" type="url" maxlength="180" placeholder="https://...">
+            </div>
+
+            <div class="edit-actions">
+              <button id="saveBtn" class="btn btn-solid" type="submit">Save</button>
+              <button id="cancelBtn" class="btn btn-ghost" type="button">Cancel</button>
+            </div>
+
+            <p id="profileMsg" class="profile-msg"></p>
+          </form>
         </div>
 
         <div class="profile-stats">
@@ -101,9 +140,9 @@
           <button class="tab" type="button" data-tab="image" role="tab" aria-selected="false">Art</button>
         </div>
 
-        <div id="profileMsg" class="profile-msg"></div>
-
+        <div id="feedMsg" class="profile-msg"></div>
         <div id="profileFeed" class="profile-feed"></div>
+
       </div>
     </section>
   </main>

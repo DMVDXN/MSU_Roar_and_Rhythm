@@ -8,30 +8,92 @@ function setMsg(text) {
   if (msg) msg.textContent = text || "";
 }
 
-function getNext() {
+function getNext(defaultPath = "submit.html") {
   const params = new URLSearchParams(window.location.search);
-  return params.get("next") || "index.html";
+  return params.get("next") || defaultPath;
 }
 
-function setAuthUI(session) {
-  const loggedOut = document.getElementById("authLoggedOut");
-  const loggedIn = document.getElementById("authLoggedIn");
-  const avatar = document.getElementById("profileAvatar");
-  const emailEl = document.getElementById("menuEmail");
+function cleanUsernameFromEmail(email) {
+  const local = (email || "").split("@")[0] || "user";
+  const cleaned = local
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, "")
+    .slice(0, 20);
+  return cleaned || "user";
+}
+
+function randomSuffix() {
+  return String(Math.floor(1000 + Math.random() * 9000));
+}
+
+async function ensureProfile(user) {
+  if (!user) return null;
+
+  const { data: existing, error: readErr } = await supabase
+    .from("profiles")
+    .select("id,username,display_name,bio,website,avatar_url")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (readErr) return null;
+  if (existing) return existing;
+
+  const email = user.email || "";
+  const base = cleanUsernameFromEmail(email);
+
+  for (let i = 0; i < 6; i++) {
+    const candidate = i === 0 ? base : `${base}${randomSuffix()}`.slice(0, 24);
+
+    const { data: inserted, error: insErr } = await supabase
+      .from("profiles")
+      .insert({
+        id: user.id,
+        username: candidate,
+        display_name: "",
+        bio: "",
+        website: ""
+      })
+      .select("id,username,display_name,bio,website,avatar_url")
+      .single();
+
+    if (!insErr) return inserted;
+  }
+
+  return null;
+}
+
+function setHeaderUI(session, profile) {
+  const loggedOutBlock = document.getElementById("authLoggedOut");
+  const loggedInBlock = document.getElementById("authLoggedIn");
+
+  const navLogin = document.getElementById("navLogin");
+  const navSignup = document.getElementById("navSignup");
+  const navProfile = document.getElementById("navProfile");
+  const navLogout = document.getElementById("navLogout");
 
   const isLoggedIn = !!session;
 
-  if (loggedOut) loggedOut.style.display = isLoggedIn ? "none" : "flex";
-  if (loggedIn) loggedIn.style.display = isLoggedIn ? "flex" : "none";
+  if (loggedOutBlock) loggedOutBlock.style.display = isLoggedIn ? "none" : "flex";
+  if (loggedInBlock) loggedInBlock.style.display = isLoggedIn ? "flex" : "none";
 
-  if (isLoggedIn) {
-    const email = session.user?.email || "";
-    if (emailEl) emailEl.textContent = email;
+  if (navLogin) navLogin.style.display = isLoggedIn ? "none" : "inline-flex";
+  if (navSignup) navSignup.style.display = isLoggedIn ? "none" : "inline-flex";
+  if (navProfile) navProfile.style.display = isLoggedIn ? "inline-flex" : "none";
+  if (navLogout) navLogout.style.display = isLoggedIn ? "inline-flex" : "none";
 
-    if (avatar) {
-      const letter = (email.trim()[0] || "U").toUpperCase();
-      avatar.textContent = letter;
-    }
+  const email = session?.user?.email || "";
+  const menuEmail = document.getElementById("menuEmail");
+  if (menuEmail) menuEmail.textContent = email;
+
+  const avatar = document.getElementById("profileAvatar");
+  if (avatar) {
+    const nameSource =
+      (profile?.display_name || "").trim() ||
+      (profile?.username || "").trim() ||
+      email.trim();
+
+    const letter = (nameSource[0] || "U").toUpperCase();
+    avatar.textContent = letter;
   }
 }
 
@@ -61,7 +123,6 @@ function setupMenu() {
   });
 
   document.addEventListener("click", () => closeMenu());
-
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeMenu();
   });
@@ -72,14 +133,32 @@ function setupMenu() {
       window.location.href = "index.html";
     });
   }
+
+  const navLogout = document.getElementById("navLogout");
+  if (navLogout) {
+    navLogout.addEventListener("click", async (e) => {
+      e.preventDefault();
+      await supabase.auth.signOut();
+      window.location.href = "index.html";
+    });
+  }
 }
 
-async function initAuthUI() {
+async function initHeader() {
   const { data } = await supabase.auth.getSession();
-  setAuthUI(data?.session || null);
+  const session = data?.session || null;
 
-  supabase.auth.onAuthStateChange((_event, session) => {
-    setAuthUI(session || null);
+  let profile = null;
+  if (session?.user) {
+    profile = await ensureProfile(session.user);
+  }
+
+  setHeaderUI(session, profile);
+
+  supabase.auth.onAuthStateChange(async (_event, newSession) => {
+    let p = null;
+    if (newSession?.user) p = await ensureProfile(newSession.user);
+    setHeaderUI(newSession, p);
   });
 
   setupMenu();
@@ -92,15 +171,19 @@ async function handleSignup(e) {
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
 
-  const { error } = await supabase.auth.signUp({ email, password });
+  const { data, error } = await supabase.auth.signUp({ email, password });
 
   if (error) {
     setMsg(error.message);
     return;
   }
 
+  if (data?.session?.user) {
+    await ensureProfile(data.session.user);
+  }
+
   setMsg("Account created. You can log in now.");
-  const next = encodeURIComponent(getNext());
+  const next = encodeURIComponent(getNext("submit.html"));
   setTimeout(() => (window.location.href = `login.html?next=${next}`), 900);
 }
 
@@ -111,19 +194,23 @@ async function handleLogin(e) {
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
 
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     setMsg(error.message);
     return;
   }
 
+  if (data?.user) {
+    await ensureProfile(data.user);
+  }
+
   setMsg("Logged in.");
-  const next = getNext();
+  const next = getNext("submit.html");
   setTimeout(() => (window.location.href = next), 350);
 }
 
 if (signupForm) signupForm.addEventListener("submit", handleSignup);
 if (loginForm) loginForm.addEventListener("submit", handleLogin);
 
-initAuthUI();
+initHeader();
