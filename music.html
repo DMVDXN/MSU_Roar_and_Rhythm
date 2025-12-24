@@ -1,0 +1,58 @@
+<!-- music.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Music - Roar & Rhythm</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="music.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <a class="brand" href="index.html">
+      <img class="brand-logo" src="assets/logo.png" alt="Roar & Rhythm Logo">
+      <span class="brand-name">Roar & Rhythm</span>
+    </a>
+
+    <form class="topbar-search" role="search" action="#" onsubmit="return false;">
+      <span class="search-icon">🔎</span>
+      <input class="search-input" type="search" placeholder="Search for poetry, music, art..." aria-label="Search">
+    </form>
+
+    <nav class="topbar-nav">
+      <a href="poetry.html">Poetry</a>
+      <a href="music.html">Music</a>
+      <a href="art.html">Art</a>
+      <a href="submit.html">Submit</a>
+    </nav>
+
+    <div class="topbar-auth">
+      <a id="navLogin" class="pill pill-ghost" href="login.html">Login</a>
+      <a id="navSignup" class="pill pill-solid" href="signup.html">Sign Up</a>
+
+      <a id="navProfile" class="pill pill-ghost" href="profile.html" style="display:none;">Profile</a>
+      <a id="navLogout" class="pill pill-ghost" href="logout.html" style="display:none;">Logout</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="page">
+      <div class="page-card">
+        <h2 class="page-title">Music</h2>
+        <p class="page-subtitle">Approved music submissions appear here.</p>
+
+        <div id="list" class="list"></div>
+        <p id="msg" class="msg"></p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2025 Roar & Rhythm | Morgan State University</p>
+  </footer>
+
+  <script type="module" src="auth.js"></script>
+  <script type="module" src="music.js"></script>
+</body>
+</html>
