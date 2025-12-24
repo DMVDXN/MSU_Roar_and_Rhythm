@@ -41,3 +41,60 @@ footer {
     bottom: 0;
     width: 100%;
 }
+
+.submit-card {
+  max-width: 720px;
+  margin: 0 auto;
+  background: #ffffff;
+  padding: 1.25em;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,0.08);
+  text-align: left;
+}
+
+.submit-card label {
+  display: block;
+  margin-top: 12px;
+  font-weight: bold;
+}
+
+.submit-card input,
+.submit-card select,
+.submit-card textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  margin-top: 6px;
+  border: 1px solid rgba(0,0,0,0.18);
+  border-radius: 8px;
+  font-family: inherit;
+}
+
+.submit-card button {
+  margin-top: 14px;
+  padding: 12px 18px;
+  font-weight: bold;
+  background: #F47920;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.submit-card button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.hint {
+  display: block;
+  margin-top: 6px;
+  color: rgba(0,0,0,0.65);
+  font-size: 0.9em;
+}
+
+.msg {
+  margin-top: 12px;
+  font-weight: bold;
+}
+
