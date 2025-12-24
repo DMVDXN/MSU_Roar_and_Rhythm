@@ -1,0 +1,269 @@
+/* profile.css */
+/* Load after styles.css */
+
+.profile-wrap {
+  padding: 54px 18px 70px;
+  background: #f7f8fb;
+}
+
+.profile-card {
+  max-width: 1080px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 26px 22px;
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+.profile-head {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.profile-avatar-big {
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  background: var(--msu-navy);
+  color: var(--msu-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 1.5rem;
+}
+
+.profile-head-text {
+  flex: 1;
+}
+
+.profile-name {
+  margin: 0;
+  color: var(--msu-navy);
+  font-weight: 900;
+  font-size: 1.6rem;
+}
+
+.profile-email {
+  margin: 6px 0 0;
+  color: rgba(0,0,0,0.60);
+  font-weight: 800;
+}
+
+.profile-bio {
+  margin: 10px 0 0;
+  color: rgba(0, 45, 114, 0.85);
+  font-weight: 700;
+}
+
+.profile-stats {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.stat {
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 14px;
+  padding: 12px 12px;
+  background: #ffffff;
+}
+
+.stat-num {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: var(--msu-navy);
+}
+
+.stat-label {
+  margin-top: 4px;
+  font-weight: 800;
+  color: rgba(0,0,0,0.55);
+  font-size: 0.95rem;
+}
+
+.profile-tabs {
+  margin-top: 16px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  border: 1px solid rgba(0, 45, 114, 0.22);
+  background: transparent;
+  color: var(--msu-navy);
+  font-weight: 900;
+  border-radius: 999px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.tab.active {
+  background: rgba(0, 45, 114, 0.08);
+  border-color: rgba(0, 45, 114, 0.30);
+}
+
+.profile-msg {
+  margin-top: 14px;
+  text-align: center;
+  font-weight: 800;
+  color: rgba(0,0,0,0.65);
+}
+
+.profile-feed {
+  margin-top: 14px;
+}
+
+/* Feed cards (poetry + music) */
+.profile-post {
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 14px;
+  padding: 16px 16px 14px;
+  margin-top: 12px;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.05);
+  background: #ffffff;
+}
+
+.profile-post h3 {
+  margin: 0 0 8px;
+  color: var(--msu-navy);
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.profile-meta {
+  font-size: 0.95rem;
+  color: rgba(0,0,0,0.55);
+  margin-bottom: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-weight: 900;
+  font-size: 0.85rem;
+  border: 1px solid rgba(0,0,0,0.12);
+  background: rgba(0,0,0,0.03);
+}
+
+.badge.approved {
+  border-color: rgba(0, 150, 80, 0.25);
+  background: rgba(0, 150, 80, 0.08);
+}
+
+.badge.pending {
+  border-color: rgba(244, 121, 32, 0.28);
+  background: rgba(244, 121, 32, 0.10);
+}
+
+.badge.rejected {
+  border-color: rgba(176, 0, 32, 0.25);
+  background: rgba(176, 0, 32, 0.08);
+}
+
+.profile-body {
+  white-space: pre-wrap;
+  line-height: 1.65;
+  color: rgba(0, 45, 114, 0.92);
+  font-size: 1.02rem;
+}
+
+.open-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-weight: 900;
+  text-decoration: none;
+  background: var(--msu-orange);
+  color: var(--msu-white);
+  border: 1px solid var(--msu-orange);
+}
+
+.open-link:hover {
+  filter: brightness(1.04);
+}
+
+/* Art grid inside profile */
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.grid-card {
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 14px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.05);
+}
+
+.grid-card img {
+  width: 100%;
+  height: 210px;
+  object-fit: cover;
+  display: block;
+}
+
+.grid-card-body {
+  padding: 10px 12px 12px;
+}
+
+.grid-title {
+  margin: 0;
+  color: var(--msu-navy);
+  font-weight: 900;
+  font-size: 1.02rem;
+}
+
+.grid-meta {
+  margin-top: 6px;
+  color: rgba(0,0,0,0.55);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+@media (max-width: 900px) {
+  .profile-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .profile-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .profile-card {
+    padding: 20px 14px;
+  }
+
+  .profile-head {
+    align-items: flex-start;
+  }
+
+  .profile-avatar-big {
+    width: 60px;
+    height: 60px;
+  }
+
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .grid-card img {
+    height: 200px;
+  }
+}

@@ -1,0 +1,118 @@
+<!-- profile.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Profile - Roar & Rhythm</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="profile.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <a class="brand" href="index.html">
+      <img class="brand-logo" src="assets/logo.png" alt="Roar & Rhythm Logo">
+      <span class="brand-name">Roar & Rhythm</span>
+    </a>
+
+    <form class="topbar-search" role="search" action="#" onsubmit="return false;">
+      <span class="search-icon">🔎</span>
+      <input class="search-input" type="search" placeholder="Search for poetry, music, art..." aria-label="Search">
+    </form>
+
+    <nav class="topbar-nav">
+      <a href="poetry.html">Poetry</a>
+      <a href="music.html">Music</a>
+      <a href="art.html">Art</a>
+      <a href="submit.html">Submit</a>
+    </nav>
+
+    <!-- Use your logged-out + logged-in header block here (profile icon + hamburger) -->
+    <div class="topbar-auth">
+      <div id="authLoggedOut" class="auth-logged-out">
+        <a class="pill pill-ghost" href="login.html">Login</a>
+        <a class="pill pill-solid" href="signup.html">Sign Up</a>
+      </div>
+
+      <div id="authLoggedIn" class="auth-logged-in" style="display:none;">
+        <a id="profileBtn" class="profile-btn" href="profile.html" aria-label="Profile">
+          <span id="profileAvatar" class="profile-avatar">U</span>
+        </a>
+
+        <button id="menuBtn" class="menu-btn" type="button" aria-label="Menu" aria-expanded="false">
+          <span class="menu-bar"></span>
+          <span class="menu-bar"></span>
+          <span class="menu-bar"></span>
+        </button>
+
+        <div id="menuPanel" class="menu-panel" role="menu" aria-hidden="true">
+          <div class="menu-user">
+            <div class="menu-user-title">Signed in</div>
+            <div id="menuEmail" class="menu-user-email"></div>
+          </div>
+
+          <a class="menu-item" href="profile.html" role="menuitem">Profile</a>
+          <a class="menu-item" href="submit.html" role="menuitem">Submit</a>
+
+          <button id="logoutBtn" class="menu-item danger" type="button" role="menuitem">
+            Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="profile-wrap">
+      <div class="profile-card">
+        <div class="profile-head">
+          <div class="profile-avatar-big" id="profileAvatarBig">U</div>
+
+          <div class="profile-head-text">
+            <h2 class="profile-name" id="profileName">Your Profile</h2>
+            <p class="profile-email" id="profileEmail"></p>
+            <p class="profile-bio" id="profileBio">Your submissions and activity live here.</p>
+          </div>
+        </div>
+
+        <div class="profile-stats">
+          <div class="stat">
+            <div class="stat-num" id="statAll">0</div>
+            <div class="stat-label">Posts</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num" id="statPoem">0</div>
+            <div class="stat-label">Poetry</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num" id="statSong">0</div>
+            <div class="stat-label">Music</div>
+          </div>
+          <div class="stat">
+            <div class="stat-num" id="statImage">0</div>
+            <div class="stat-label">Art</div>
+          </div>
+        </div>
+
+        <div class="profile-tabs" role="tablist" aria-label="Profile tabs">
+          <button class="tab active" type="button" data-tab="all" role="tab" aria-selected="true">All</button>
+          <button class="tab" type="button" data-tab="poem" role="tab" aria-selected="false">Poetry</button>
+          <button class="tab" type="button" data-tab="song" role="tab" aria-selected="false">Music</button>
+          <button class="tab" type="button" data-tab="image" role="tab" aria-selected="false">Art</button>
+        </div>
+
+        <div id="profileMsg" class="profile-msg"></div>
+
+        <div id="profileFeed" class="profile-feed"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2025 Roar & Rhythm | Morgan State University</p>
+  </footer>
+
+  <script type="module" src="auth.js"></script>
+  <script type="module" src="profile.js"></script>
+</body>
+</html>
