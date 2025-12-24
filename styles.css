@@ -253,3 +253,127 @@ header.topbar {
 .home-cta:hover {
   filter: brightness(1.04);
 }
+
+/* Logged in header UI */
+.topbar-auth {
+  position: relative;
+}
+
+.auth-logged-out,
+.auth-logged-in {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.10);
+}
+
+.profile-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  color: var(--msu-navy);
+  background: var(--msu-white);
+  font-size: 0.95rem;
+}
+
+.menu-btn {
+  width: 42px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.10);
+  cursor: pointer;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0;
+}
+
+.menu-bar {
+  width: 18px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.92);
+  display: block;
+  border-radius: 2px;
+}
+
+.menu-panel {
+  position: absolute;
+  top: 52px;
+  right: 0;
+  width: 240px;
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.10);
+  border-radius: 14px;
+  box-shadow: 0 18px 36px rgba(0,0,0,0.14);
+  padding: 10px;
+  display: none;
+  z-index: 50;
+}
+
+.menu-panel.open {
+  display: block;
+}
+
+.menu-user {
+  padding: 10px 10px 12px;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  margin-bottom: 8px;
+}
+
+.menu-user-title {
+  font-weight: 900;
+  color: rgba(0,0,0,0.65);
+  font-size: 0.85rem;
+}
+
+.menu-user-email {
+  margin-top: 4px;
+  font-weight: 800;
+  color: var(--msu-navy);
+  font-size: 0.95rem;
+  word-break: break-word;
+}
+
+.menu-item {
+  width: 100%;
+  display: block;
+  text-decoration: none;
+  text-align: left;
+  padding: 10px 10px;
+  border-radius: 10px;
+  color: rgba(0,0,0,0.82);
+  font-weight: 800;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.menu-item:hover {
+  background: rgba(0, 45, 114, 0.06);
+}
+
+.menu-item.danger {
+  color: #b00020;
+}
+
+.menu-item.danger:hover {
+  background: rgba(176, 0, 32, 0.08);
+}
