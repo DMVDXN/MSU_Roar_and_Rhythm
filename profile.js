@@ -11,7 +11,6 @@ const bioEl = document.getElementById("profileBio");
 const websiteEl = document.getElementById("profileWebsite");
 
 const avatarBigEl = document.getElementById("profileAvatarBig");
-const avatarFallbackEl = document.getElementById("profileAvatarFallback");
 
 const editBtn = document.getElementById("editBtn");
 const editPanel = document.getElementById("editPanel");
@@ -25,8 +24,22 @@ const inBio = document.getElementById("bio");
 const inWebsite = document.getElementById("website");
 const inAvatarUrl = document.getElementById("avatar_url");
 
+const statAll = document.getElementById("statAll");
+const statPoem = document.getElementById("statPoem");
+const statSong = document.getElementById("statSong");
+const statImage = document.getElementById("statImage");
+
+const tabBtns = Array.from(document.querySelectorAll(".profile-tabs .tab"));
+
 let currentUser = null;
 let currentProfile = null;
+
+let allPosts = [];
+let activeTab = "all";
+
+// post editing state
+let editingPostId = null;
+let postSaving = false;
 
 function setMsg(text) {
   if (msgEl) msgEl.textContent = text || "";
@@ -56,42 +69,46 @@ function safeText(el, value) {
   el.textContent = value || "";
 }
 
+function normalizeWebsite(url) {
+  const v = (url || "").trim();
+  if (!v) return "";
+  if (/^https?:\/\//i.test(v)) return v;
+  return "https://" + v;
+}
+
 function showWebsite(url) {
   if (!websiteEl) return;
-  const v = (url || "").trim();
+  const v = normalizeWebsite(url);
   if (!v) {
+    websiteEl.style.display = "none";
     websiteEl.textContent = "";
     websiteEl.removeAttribute("href");
     return;
   }
+  websiteEl.style.display = "inline-block";
   websiteEl.textContent = v;
   websiteEl.href = v;
 }
 
-function setAvatar(avatarUrl, displayName, email) {
-  const url = (avatarUrl || "").trim();
-  const fallbackLetter =
-    ((displayName || "").trim()[0] ||
-      (email || "").trim()[0] ||
-      "U").toUpperCase();
-
-  if (avatarFallbackEl) avatarFallbackEl.textContent = fallbackLetter;
-
+function setBigAvatar(profile, userEmail) {
   if (!avatarBigEl) return;
 
+  const dn = (profile?.display_name || "").trim();
+  const un = (profile?.username || "").trim();
+  const email = (userEmail || "").trim();
+  const url = (profile?.avatar_url || "").trim();
+
+  const nameSource = dn || un || email || "U";
+  const letter = (nameSource[0] || "U").toUpperCase();
+
   if (url) {
-    avatarBigEl.src = url;
-    avatarBigEl.style.display = "block";
-    if (avatarFallbackEl) avatarFallbackEl.style.display = "none";
-    avatarBigEl.onerror = () => {
-      avatarBigEl.removeAttribute("src");
-      avatarBigEl.style.display = "none";
-      if (avatarFallbackEl) avatarFallbackEl.style.display = "flex";
-    };
+    avatarBigEl.textContent = "";
+    avatarBigEl.style.backgroundImage = `url("${url}")`;
+    avatarBigEl.classList.add("has-img");
   } else {
-    avatarBigEl.removeAttribute("src");
-    avatarBigEl.style.display = "none";
-    if (avatarFallbackEl) avatarFallbackEl.style.display = "flex";
+    avatarBigEl.textContent = letter;
+    avatarBigEl.style.backgroundImage = "";
+    avatarBigEl.classList.remove("has-img");
   }
 }
 
@@ -111,6 +128,15 @@ async function requireUser() {
   return data.user;
 }
 
+function cleanUsernameFromEmail(email) {
+  const local = (email || "").split("@")[0] || "user";
+  const cleaned = local
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, "")
+    .slice(0, 20);
+  return cleaned || "user";
+}
+
 async function loadProfile(user) {
   setMsg("");
   setFeedMsg("");
@@ -123,67 +149,57 @@ async function loadProfile(user) {
 
   if (error) {
     console.error("profiles select error", error);
-    setMsg(
-      "Profile load failed. Make sure you have a 'profiles' table with columns: id, display_name, username, bio, website, avatar_url."
-    );
+    setMsg("Profile load failed: " + error.message);
     return null;
   }
 
-  // If no row yet, create one so updates always work
-  if (!data) {
-    const baseUsername =
-      (user.email || "user").split("@")[0].replace(/[^a-zA-Z0-9_]/g, "").slice(0, 24) || "user";
+  if (data) return data;
 
-    const createPayload = {
-      id: user.id,
-      display_name: "",
-      username: baseUsername,
-      bio: "",
-      website: "",
-      avatar_url: "",
-      updated_at: new Date().toISOString(),
-    };
+  const base = cleanUsernameFromEmail(user.email || "");
+  const createPayload = {
+    id: user.id,
+    display_name: base,
+    username: base,
+    bio: "",
+    website: "",
+    avatar_url: "",
+    updated_at: new Date().toISOString()
+  };
 
-    const { data: created, error: createErr } = await supabase
-      .from("profiles")
-      .upsert(createPayload, { onConflict: "id" })
-      .select("id, display_name, username, bio, website, avatar_url, updated_at")
-      .single();
+  const { data: created, error: createErr } = await supabase
+    .from("profiles")
+    .upsert(createPayload, { onConflict: "id" })
+    .select("id, display_name, username, bio, website, avatar_url, updated_at")
+    .single();
 
-    if (createErr) {
-      console.error("profiles upsert create error", createErr);
-      setMsg("Could not create profile row: " + createErr.message);
-      return null;
-    }
-
-    return created;
+  if (createErr) {
+    console.error("profiles upsert create error", createErr);
+    setMsg("Could not create profile row: " + createErr.message);
+    return null;
   }
 
-  return data;
+  return created;
 }
 
 function renderProfile(user, profile) {
-  const dn = (profile.display_name || "").trim();
-  const un = (profile.username || "").trim();
-  const bio = (profile.bio || "").trim();
-  const website = (profile.website || "").trim();
-  const avatarUrl = (profile.avatar_url || "").trim();
+  const dn = (profile?.display_name || "").trim();
+  const un = (profile?.username || "").trim();
+  const bio = (profile?.bio || "").trim();
+  const website = (profile?.website || "").trim();
 
   safeText(displayNameEl, dn || "No display name yet");
   safeText(usernameEl, un ? "@" + un : "@(no username)");
-  safeText(emailEl, user.email || "");
-
+  safeText(emailEl, user?.email || "");
   safeText(bioEl, bio || "No bio yet.");
   showWebsite(website);
 
-  setAvatar(avatarUrl, dn, user.email || "");
+  setBigAvatar(profile, user?.email || "");
 
-  // preload form values (so edit always reflects current profile)
   if (inDisplayName) inDisplayName.value = dn;
   if (inUsername) inUsername.value = un;
   if (inBio) inBio.value = bio;
   if (inWebsite) inWebsite.value = website;
-  if (inAvatarUrl) inAvatarUrl.value = avatarUrl;
+  if (inAvatarUrl) inAvatarUrl.value = (profile?.avatar_url || "").trim();
 }
 
 function openEdit() {
@@ -198,32 +214,178 @@ function closeEdit() {
   setFeedMsg("");
 }
 
-function renderPost(p) {
-  const title = escapeHtml(p.title || "");
-  const date = p.created_at ? new Date(p.created_at).toLocaleString() : "";
-  const status = escapeHtml(p.status || "");
-  const type = escapeHtml(p.type || "");
+function formatDate(ts) {
+  if (!ts) return "";
+  return new Date(ts).toLocaleString();
+}
 
-  let body = "";
-  if (p.type === "poem" && p.body_text) {
-    body = `<div class="body">${escapeHtml(p.body_text).replaceAll("\n", "<br>")}</div>`;
+function setActiveTab(tab) {
+  activeTab = tab;
+
+  tabBtns.forEach((btn) => {
+    const isOn = btn.getAttribute("data-tab") === tab;
+    btn.classList.toggle("active", isOn);
+    btn.setAttribute("aria-selected", isOn ? "true" : "false");
+  });
+
+  // close any open post editor when switching tabs
+  editingPostId = null;
+  renderFeed();
+}
+
+function updateStats(posts) {
+  const poemCount = posts.filter((p) => p.type === "poem").length;
+  const songCount = posts.filter((p) => p.type === "song").length;
+  const imageCount = posts.filter((p) => p.type === "image").length;
+
+  if (statAll) statAll.textContent = String(posts.length);
+  if (statPoem) statPoem.textContent = String(poemCount);
+  if (statSong) statSong.textContent = String(songCount);
+  if (statImage) statImage.textContent = String(imageCount);
+}
+
+function getFilteredPosts() {
+  if (activeTab === "all") return allPosts;
+  return allPosts.filter((p) => p.type === activeTab);
+}
+
+function makePostBody(p) {
+  if (p.type === "poem") {
+    const body = (p.body_text || "").trim();
+    return `<div class="profile-body">${escapeHtml(body)}</div>`;
   }
-  if (p.type === "song" && p.song_url) {
-    const u = escapeHtml(p.song_url);
-    body = `<div class="body"><a href="${u}" target="_blank" rel="noreferrer">${u}</a></div>`;
+
+  if (p.type === "song") {
+    const u = (p.song_url || "").trim();
+    if (!u) return `<div class="profile-body">(No link)</div>`;
+    const safe = escapeHtml(u);
+    return `
+      <div class="profile-body">
+        <a class="open-link" href="${safe}" target="_blank" rel="noreferrer">Open link</a>
+        <div class="link-line">${safe}</div>
+      </div>
+    `;
   }
-  if (p.type === "image" && p.image_url) {
-    const u = escapeHtml(p.image_url);
-    body = `<div class="body"><img class="post-img" src="${u}" alt="Uploaded artwork"></div>`;
+
+  if (p.type === "image") {
+    const u = (p.image_url || "").trim();
+    if (!u) return `<div class="profile-body">(No image)</div>`;
+    const safe = escapeHtml(u);
+    return `
+      <div class="profile-body">
+        <img class="post-img" src="${safe}" alt="Uploaded artwork">
+      </div>
+    `;
+  }
+
+  return `<div class="profile-body"></div>`;
+}
+
+function makeEditForm(p) {
+  const id = escapeHtml(p.id);
+  const type = p.type || "poem";
+  const title = escapeHtml((p.title || "").trim());
+
+  const poemBody = escapeHtml((p.body_text || "").trim());
+  const songUrl = escapeHtml((p.song_url || "").trim());
+  const imageUrl = escapeHtml((p.image_url || "").trim());
+
+  let typeFields = "";
+  if (type === "poem") {
+    typeFields = `
+      <div class="edit-row">
+        <label>Poem text</label>
+        <textarea class="edit-input" data-field="body_text" rows="6" placeholder="Write your poem...">${poemBody}</textarea>
+      </div>
+    `;
+  } else if (type === "song") {
+    typeFields = `
+      <div class="edit-row">
+        <label>Song link</label>
+        <input class="edit-input" data-field="song_url" type="url" value="${songUrl}" placeholder="https://...">
+      </div>
+    `;
+  } else if (type === "image") {
+    typeFields = `
+      <div class="edit-row">
+        <label>Image URL</label>
+        <input class="edit-input" data-field="image_url" type="url" value="${imageUrl}" placeholder="https://...">
+      </div>
+    `;
   }
 
   return `
-    <div class="post">
-      <h3>${title}</h3>
-      <div class="meta">${date} <span class="pill">${type}</span> <span class="pill pill-muted">${status}</span></div>
-      ${body}
+    <div class="post-edit" data-editing="1">
+      <div class="edit-row">
+        <label>Title</label>
+        <input class="edit-input" data-field="title" type="text" value="${title}" maxlength="80" placeholder="Title">
+      </div>
+
+      ${typeFields}
+
+      <div class="edit-actions-row">
+        <button class="btn btn-solid post-save" type="button" data-action="save-edit" data-id="${id}">
+          ${postSaving ? "Saving..." : "Save changes"}
+        </button>
+        <button class="btn btn-ghost post-cancel" type="button" data-action="cancel-edit" data-id="${id}">
+          Cancel
+        </button>
+        <div class="post-edit-msg" data-edit-msg="${id}"></div>
+      </div>
     </div>
   `;
+}
+
+function renderPostCard(p) {
+  const id = escapeHtml(p.id);
+  const title = escapeHtml(p.title || "Untitled");
+  const date = formatDate(p.created_at);
+  const status = escapeHtml(p.status || "pending");
+  const type = escapeHtml(p.type || "");
+  const isHidden = !!p.is_hidden;
+  const hideLabel = isHidden ? "Unhide" : "Hide";
+  const hiddenBadge = isHidden ? '<span class="badge badge-hidden">Hidden</span>' : "";
+
+  const isEditing = String(editingPostId || "") === String(p.id);
+
+  return `
+    <article class="profile-post" data-id="${id}">
+      <div class="profile-post-top">
+        <h3>${title}</h3>
+        <div class="post-actions">
+          <button class="edit-btn" type="button" data-action="edit" data-id="${id}">Edit</button>
+          <button class="hide-btn" type="button" data-action="toggle-hide" data-id="${id}">${hideLabel}</button>
+          <button class="delete-btn" type="button" data-action="delete" data-id="${id}">Delete</button>
+        </div>
+      </div>
+
+      <div class="profile-meta">
+        <span>${escapeHtml(date)}</span>
+        <span class="badge">${type}</span>
+        ${hiddenBadge}
+        <span class="badge badge-muted">${status}</span>
+      </div>
+
+      ${isEditing ? makeEditForm(p) : makePostBody(p)}
+    </article>
+  `;
+}
+
+function renderFeed() {
+  if (!feedEl) return;
+
+  const posts = getFilteredPosts();
+  updateStats(allPosts);
+
+  if (!posts.length) {
+    feedEl.innerHTML = "";
+    if (activeTab === "all") setFeedMsg("No submissions yet.");
+    else setFeedMsg("No submissions in this tab yet.");
+    return;
+  }
+
+  setFeedMsg("");
+  feedEl.innerHTML = posts.map(renderPostCard).join("");
 }
 
 async function loadMyPosts(user) {
@@ -235,7 +397,7 @@ async function loadMyPosts(user) {
 
   const { data, error } = await supabase
     .from("posts")
-    .select("id, type, title, body_text, song_url, image_url, status, created_at")
+    .select("id, type, title, body_text, song_url, image_url, status, created_at, is_hidden")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -245,17 +407,237 @@ async function loadMyPosts(user) {
     return;
   }
 
-  if (!data || data.length === 0) {
-    setFeedMsg("No submissions yet.");
+  allPosts = Array.isArray(data) ? data : [];
+  editingPostId = null;
+  renderFeed();
+}
+
+async function usernameAvailable(username, myId) {
+  const u = (username || "").trim();
+  if (!u) return true;
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("username", u)
+    .neq("id", myId)
+    .limit(1);
+
+  if (error) return true;
+  return !data || data.length === 0;
+}
+
+async function deletePostById(postId) {
+  if (!currentUser) return;
+
+  const ok = confirm("Delete this post? This cannot be undone.");
+  if (!ok) return;
+
+  setFeedMsg("Deleting...");
+
+  const { error } = await supabase
+    .from("posts")
+    .delete()
+    .eq("id", postId)
+    .eq("user_id", currentUser.id);
+
+  if (error) {
+    console.error("delete error", error);
+    setFeedMsg("Delete failed: " + error.message);
     return;
   }
 
-  setFeedMsg("");
-  feedEl.innerHTML = data.map(renderPost).join("");
+  allPosts = allPosts.filter((p) => String(p.id) !== String(postId));
+  editingPostId = null;
+  renderFeed();
+  setFeedMsg("Deleted.");
+  setTimeout(() => setFeedMsg(""), 900);
+}
+
+async function toggleHidden(postId) {
+  if (!currentUser) return;
+
+  const post = allPosts.find((p) => String(p.id) === String(postId));
+  if (!post) return;
+
+  const nextHidden = !post.is_hidden;
+  setFeedMsg(nextHidden ? "Hiding..." : "Making visible...");
+
+  const { data, error } = await supabase
+    .from("posts")
+    .update({ is_hidden: nextHidden })
+    .eq("id", postId)
+    .eq("user_id", currentUser.id)
+    .select("id, type, title, body_text, song_url, image_url, status, created_at, is_hidden")
+    .maybeSingle();
+
+  if (error) {
+    console.error("hide toggle error", error);
+    setFeedMsg("Update failed: " + error.message);
+    return;
+  }
+
+  if (data) {
+    allPosts = allPosts.map((p) => (String(p.id) === String(postId) ? data : p));
+  } else {
+    allPosts = allPosts.map((p) => {
+      if (String(p.id) !== String(postId)) return p;
+      return { ...p, is_hidden: nextHidden };
+    });
+  }
+
+  renderFeed();
+  setFeedMsg(nextHidden ? "Hidden from public pages." : "Visible on public pages.");
+  setTimeout(() => setFeedMsg(""), 900);
+}
+
+function setInlineEditMsg(postId, text) {
+  const el = document.querySelector(`[data-edit-msg="${CSS.escape(String(postId))}"]`);
+  if (!el) return;
+  el.textContent = text || "";
+}
+
+function readEditValuesFromCard(cardEl, type) {
+  const titleEl = cardEl.querySelector(`[data-field="title"]`);
+  const title = (titleEl?.value || "").trim();
+
+  const payload = { title };
+
+  if (type === "poem") {
+    const bodyEl = cardEl.querySelector(`[data-field="body_text"]`);
+    payload.body_text = (bodyEl?.value || "").trim();
+  } else if (type === "song") {
+    const urlEl = cardEl.querySelector(`[data-field="song_url"]`);
+    payload.song_url = (urlEl?.value || "").trim();
+  } else if (type === "image") {
+    const urlEl = cardEl.querySelector(`[data-field="image_url"]`);
+    payload.image_url = (urlEl?.value || "").trim();
+  }
+
+  return payload;
+}
+
+function validatePostUpdate(type, payload) {
+  if (!payload.title) return "Title is required.";
+
+  if (type === "poem") {
+    if (!payload.body_text) return "Poem text is required.";
+  }
+  if (type === "song") {
+    if (!payload.song_url) return "Song link is required.";
+  }
+  if (type === "image") {
+    if (!payload.image_url) return "Image URL is required.";
+  }
+
+  return "";
+}
+
+async function savePostEdits(postId, cardEl) {
+  if (!currentUser) return;
+
+  const post = allPosts.find((p) => String(p.id) === String(postId));
+  if (!post) return;
+
+  const type = post.type || "poem";
+  const payload = readEditValuesFromCard(cardEl, type);
+  const errText = validatePostUpdate(type, payload);
+  if (errText) {
+    setInlineEditMsg(postId, errText);
+    return;
+  }
+
+  setInlineEditMsg(postId, "");
+  postSaving = true;
+  renderFeed();
+
+  const updatePayload = { title: payload.title };
+
+  if (type === "poem") updatePayload.body_text = payload.body_text;
+  if (type === "song") updatePayload.song_url = payload.song_url;
+  if (type === "image") updatePayload.image_url = payload.image_url;
+
+  const { data, error } = await supabase
+    .from("posts")
+    .update(updatePayload)
+    .eq("id", postId)
+    .eq("user_id", currentUser.id)
+    .select("id, type, title, body_text, song_url, image_url, status, created_at, is_hidden")
+    .maybeSingle();
+
+  postSaving = false;
+
+  if (error) {
+    console.error("update post error", error);
+    renderFeed();
+    setInlineEditMsg(postId, "Save failed: " + error.message);
+    return;
+  }
+
+  if (data) {
+    allPosts = allPosts.map((p) => (String(p.id) === String(postId) ? data : p));
+  } else {
+    // fallback if select is blocked by policy
+    allPosts = allPosts.map((p) => {
+      if (String(p.id) !== String(postId)) return p;
+      return { ...p, ...updatePayload };
+    });
+  }
+
+  editingPostId = null;
+  renderFeed();
+  setFeedMsg("Updated.");
+  setTimeout(() => setFeedMsg(""), 900);
 }
 
 editBtn?.addEventListener("click", openEdit);
 cancelBtn?.addEventListener("click", closeEdit);
+
+tabBtns.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const tab = btn.getAttribute("data-tab") || "all";
+    setActiveTab(tab);
+  });
+});
+
+feedEl?.addEventListener("click", (e) => {
+  const actionEl = e.target.closest("[data-action]");
+  if (!actionEl) return;
+
+  const action = actionEl.getAttribute("data-action");
+  const id = actionEl.getAttribute("data-id");
+  if (!id) return;
+
+  if (action === "delete") {
+    deletePostById(id);
+    return;
+  }
+
+  if (action === "toggle-hide") {
+    toggleHidden(id);
+    return;
+  }
+
+  if (action === "edit") {
+    editingPostId = String(editingPostId) === String(id) ? null : id;
+    postSaving = false;
+    renderFeed();
+    return;
+  }
+
+  if (action === "cancel-edit") {
+    editingPostId = null;
+    postSaving = false;
+    renderFeed();
+    return;
+  }
+
+  if (action === "save-edit") {
+    const cardEl = actionEl.closest(".profile-post");
+    if (!cardEl) return;
+    savePostEdits(id, cardEl);
+  }
+});
 
 form?.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -271,8 +653,14 @@ form?.addEventListener("submit", async (e) => {
     const website = (inWebsite?.value || "").trim();
     const avatar_url = (inAvatarUrl?.value || "").trim();
 
-    if (username && !/^[a-zA-Z0-9_]{3,40}$/.test(username)) {
-      setFeedMsg("Username must be 3 to 40 characters (letters, numbers, underscore).");
+    if (username && !/^[a-zA-Z0-9_]{3,24}$/.test(username)) {
+      setFeedMsg("Username must be 3 to 24 characters (letters, numbers, underscore).");
+      return;
+    }
+
+    const isFree = await usernameAvailable(username, currentUser.id);
+    if (!isFree) {
+      setFeedMsg("That username is taken. Try another one.");
       return;
     }
 
@@ -281,9 +669,9 @@ form?.addEventListener("submit", async (e) => {
       display_name,
       username,
       bio,
-      website,
+      website: normalizeWebsite(website),
       avatar_url,
-      updated_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
 
     const { data, error } = await supabase
@@ -302,6 +690,7 @@ form?.addEventListener("submit", async (e) => {
     renderProfile(currentUser, currentProfile);
     closeEdit();
     setMsg("Saved.");
+    setTimeout(() => setMsg(""), 900);
   } catch (err) {
     console.error("save exception", err);
     setFeedMsg("Save failed. Check console for details.");
@@ -320,7 +709,6 @@ async function init() {
   renderProfile(currentUser, currentProfile);
   await loadMyPosts(currentUser);
 
-  // keep page in sync if session changes
   supabase.auth.onAuthStateChange(async (_event, session) => {
     if (!session || !session.user) {
       window.location.href = "login.html";

@@ -102,6 +102,7 @@ async function searchAll(q) {
     .from("posts")
     .select("id,title,type,created_at,body_text,song_url,image_url,status")
     .eq("status", "approved")
+    .eq("is_hidden", false)
     .or(`title.ilike.%${query}%,body_text.ilike.%${query}%`)
     .order("created_at", { ascending: false })
     .limit(24);

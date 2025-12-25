@@ -51,10 +51,11 @@ async function loadMusic() {
   setMsg("Loading...");
 
   const { data, error } = await supabase
-    .from("submissions")
-    .select("*")
+    .from("posts")
+    .select("id, title, song_url, created_at, status, is_hidden")
     .eq("type", "song")
-    .eq("approved", true)
+    .eq("status", "approved")
+    .eq("is_hidden", false)
     .order("created_at", { ascending: false });
 
   if (error) {

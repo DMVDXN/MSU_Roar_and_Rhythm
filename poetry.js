@@ -199,7 +199,8 @@ function buildBaseQuery() {
     .from("posts")
     .select("id, title, body_text, created_at, user_id")
     .eq("type", "poem")
-    .eq("status", "approved");
+    .eq("status", "approved")
+    .eq("is_hidden", false);
 
   if (startISO) query = query.gte("created_at", startISO);
 
@@ -421,6 +422,7 @@ async function fetchSingleById(id) {
     .from("posts")
     .select("id, title, body_text, created_at, user_id")
     .eq("id", id)
+    .eq("is_hidden", false)
     .maybeSingle();
 
   if (res.error) {
