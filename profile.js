@@ -480,13 +480,17 @@ async function toggleHidden(postId) {
   if (data) {
     allPosts = allPosts.map((p) => (String(p.id) === String(postId) ? data : p));
   } else {
-    allPosts = allPosts.map((p) => {
-      if (String(p.id) !== String(postId)) return p;
-      return { ...p, is_hidden: nextHidden };
-    });
+    // If RLS prevents returning rows, refetch to confirm change landed
+    await loadMyPosts(currentUser);
   }
 
-  renderFeed();
+  // make sure UI reflects DB state
+  if (!data) {
+    await loadMyPosts(currentUser);
+  } else {
+    renderFeed();
+  }
+
   setFeedMsg(nextHidden ? "Hidden from public pages." : "Visible on public pages.");
   setTimeout(() => setFeedMsg(""), 900);
 }
