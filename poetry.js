@@ -220,11 +220,12 @@ function renderFeatured(p) {
   if (!featuredWrap) return;
 
   const author = escapeHtml(p.author_name || `User: ${shortUserId(p.user_id)}`);
+  const id = escapeHtml(p.id);
 
   featuredWrap.style.display = "block";
   featuredWrap.innerHTML = `
     <div class="featured-label">Featured</div>
-    <article class="featured-card" data-id="${escapeHtml(p.id)}" role="button" tabindex="0" aria-label="Open poem">
+    <article class="featured-card" data-id="${id}" data-post-id="${id}" role="button" tabindex="0" aria-label="Open poem">
       <h3 class="featured-title">${escapeHtml(p.title || "Untitled")}</h3>
       <div class="featured-meta">${formatDate(p.created_at)}</div>
       <div class="featured-author">By ${author}</div>
@@ -242,7 +243,7 @@ function renderCard(p) {
   const author = escapeHtml(p.author_name || `User: ${shortUserId(p.user_id)}`);
 
   return `
-    <article class="poem-card" data-id="${id}" role="button" tabindex="0" aria-label="Open poem">
+    <article class="poem-card" data-id="${id}" data-post-id="${id}" data-title="${title}" role="button" tabindex="0" aria-label="Open poem">
       <h3 class="poem-title">${title}</h3>
       <div class="poem-date">${date}</div>
       <div class="poem-author">By ${author}</div>
@@ -259,7 +260,7 @@ function renderCompactRow(p) {
   const author = escapeHtml(p.author_name || `User: ${shortUserId(p.user_id)}`);
 
   return `
-    <div class="compact-row" data-id="${id}" role="button" tabindex="0" aria-label="Open poem">
+    <div class="compact-row" data-id="${id}" data-post-id="${id}" data-title="${title}" role="button" tabindex="0" aria-label="Open poem">
       <div class="compact-title">${title}</div>
       <div class="compact-meta">
         <span class="compact-date">${date}</span>
@@ -371,9 +372,36 @@ function ensureModal() {
         <div class="poem-modal-title" id="poemModalTitle"></div>
         <button class="poem-modal-close" type="button" data-close="1" aria-label="Close">Close</button>
       </div>
+
       <div class="poem-modal-meta" id="poemModalMeta"></div>
       <div class="poem-modal-author" id="poemModalAuthor"></div>
+
+      <div id="poemModalEngagement" class="poem-modal-engagement" data-post-id="" data-title=""></div>
+
       <div class="poem-modal-body" id="poemModalBody"></div>
+
+      <section id="poemModalComments" class="rr-comments" data-post-id="">
+        <div class="rr-comments-head">
+          <h4 class="rr-comments-title">Comments</h4>
+          <div class="rr-comments-count" id="poemModalCommentsCount">0</div>
+        </div>
+
+        <div id="poemModalCommentsList" class="rr-comments-list"></div>
+
+        <form id="poemModalCommentForm" class="rr-comment-form" autocomplete="off">
+          <textarea
+            id="poemModalCommentInput"
+            class="rr-comment-input"
+            rows="3"
+            placeholder="Write a comment..."
+          ></textarea>
+
+          <div class="rr-comment-actions">
+            <div id="poemModalCommentMsg" class="rr-comment-msg"></div>
+            <button id="poemModalCommentSend" type="submit" class="pill pill-solid">Post</button>
+          </div>
+        </form>
+      </section>
     </div>
   `;
 
@@ -398,14 +426,32 @@ function openModal(poem) {
   const authorEl = document.getElementById("poemModalAuthor");
   const bodyEl = document.getElementById("poemModalBody");
 
+  const engageEl = document.getElementById("poemModalEngagement");
+  const commentsWrap = document.getElementById("poemModalComments");
+
   if (titleEl) titleEl.textContent = poem.title || "Untitled";
   if (metaEl) metaEl.textContent = formatDate(poem.created_at);
   if (authorEl) authorEl.textContent = `By ${poem.author_name || `User: ${shortUserId(poem.user_id)}`}`;
   if (bodyEl) bodyEl.textContent = poem.body_text || "";
 
+  if (engageEl) {
+    engageEl.setAttribute("data-post-id", String(poem.id));
+    engageEl.setAttribute("data-title", poem.title || "Untitled");
+  }
+
+  if (commentsWrap) {
+    commentsWrap.setAttribute("data-post-id", String(poem.id));
+  }
+
   modal.classList.add("is-open");
   modal.setAttribute("aria-hidden", "false");
   document.body.classList.add("modal-open");
+
+  document.dispatchEvent(
+    new CustomEvent("rr:poemOpened", {
+      detail: { postId: String(poem.id), title: poem.title || "Untitled" }
+    })
+  );
 }
 
 function closeModal() {
@@ -454,15 +500,23 @@ function setupClickOpen(container) {
   if (!container) return;
 
   container.addEventListener("click", (e) => {
+    if (e.target.closest(".post-actions")) return;
+    if (e.target.closest("button")) return;
+
     const el = e.target.closest("[data-id]");
     if (!el) return;
+
     handleOpenById(el.getAttribute("data-id"));
   });
 
   container.addEventListener("keydown", (e) => {
+    if (e.target.closest(".post-actions")) return;
+    if (e.target.closest("button")) return;
+
     const el = e.target.closest("[data-id]");
     if (!el) return;
     if (e.key !== "Enter" && e.key !== " ") return;
+
     e.preventDefault();
     handleOpenById(el.getAttribute("data-id"));
   });
@@ -531,6 +585,12 @@ if (viewCompactBtn) {
 
 setupClickOpen(listEl);
 setupClickOpen(featuredWrap);
+
+document.addEventListener("rr:openPost", (e) => {
+  const postId = e?.detail?.postId;
+  if (!postId) return;
+  handleOpenById(String(postId));
+});
 
 setView("cards");
 applyAll();

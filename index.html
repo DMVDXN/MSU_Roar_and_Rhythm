@@ -67,7 +67,7 @@
 
   </header>
 
-  <main>
+    <main>
     <section class="home-hero">
       <div class="home-hero-card">
         <img class="home-hero-logo" src="assets/logo.png" alt="Roar & Rhythm Logo">
@@ -85,12 +85,26 @@
         </div>
       </div>
     </section>
+
+    <section class="home-feed" aria-label="Discover">
+      <div class="home-feed-inner">
+        <div class="home-feed-head">
+          <h3 class="home-feed-title">Discover</h3>
+          <p class="home-feed-sub">Random picks from Poetry, Music, and Art.</p>
+        </div>
+
+        <div id="homeBubbleBg" class="bubble-bg" aria-hidden="true"></div>
+        <div id="homeBubbles" class="bubble-grid" aria-live="polite"></div>
+      </div>
+    </section>
   </main>
+
 
   <footer>
     <p>© 2025 Roar & Rhythm | Morgan State University</p>
   </footer>
 
+    <script type="module" src="homeFeed.js"></script>
   <script type="module" src="auth.js"></script>
 </body>
 </html>

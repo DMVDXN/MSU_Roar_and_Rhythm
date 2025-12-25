@@ -437,3 +437,159 @@ header.topbar {
 .menu-item.danger:hover {
   background: rgba(176, 0, 32, 0.08);
 }
+
+/* Home Discover (bubble feed) */
+.home-feed {
+  position: relative;
+  padding: 26px 0 70px;
+}
+
+.home-feed-inner {
+  max-width: var(--max);
+  margin: 0 auto;
+  padding: 0 18px;
+  position: relative;
+}
+
+.home-feed-head {
+  text-align: center;
+  margin: 6px 0 18px;
+}
+
+.home-feed-title {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: 0.2px;
+}
+
+.home-feed-sub {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* background bubbles */
+.bubble-bg {
+  position: absolute;
+  inset: 70px 0 0 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.bubble-bg span {
+  position: absolute;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  filter: blur(0.2px);
+  transform: translate(-50%, -50%);
+  animation-name: bubbleFloat;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes bubbleFloat {
+  0% { transform: translate(-50%, -50%) translateY(0px); }
+  50% { transform: translate(-50%, -50%) translateY(-18px); }
+  100% { transform: translate(-50%, -50%) translateY(0px); }
+}
+
+[data-theme="light"] .bubble-bg span {
+  background: rgba(10, 20, 40, 0.06);
+  border: 1px solid rgba(10, 20, 40, 0.10);
+}
+
+/* bubble grid */
+.bubble-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 18px;
+  align-items: start;
+}
+
+.bubble-card {
+  display: block;
+  text-decoration: none;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  border-radius: 22px;
+  padding: 14px 14px 16px;
+  position: relative;
+  overflow: hidden;
+  transform: rotate(var(--tilt, 0deg));
+  animation-name: cardFloat;
+  animation-duration: var(--floatDur, 7s);
+  animation-delay: var(--floatDelay, 0s);
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@keyframes cardFloat {
+  0% { transform: rotate(var(--tilt, 0deg)) translateY(0px); }
+  50% { transform: rotate(var(--tilt, 0deg)) translateY(-10px); }
+  100% { transform: rotate(var(--tilt, 0deg)) translateY(0px); }
+}
+
+.bubble-card::before {
+  content: "";
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  border-radius: 999px;
+  right: -110px;
+  top: -110px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="light"] .bubble-card::before {
+  background: rgba(10, 20, 40, 0.06);
+  border: 1px solid rgba(10, 20, 40, 0.08);
+}
+
+.bubble-badge {
+  display: inline-block;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="light"] .bubble-badge {
+  background: rgba(10, 20, 40, 0.10);
+  border: 1px solid rgba(10, 20, 40, 0.12);
+}
+
+.bubble-img {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  border-radius: 16px;
+  margin-top: 10px;
+  border: 1px solid var(--border);
+}
+
+.bubble-title {
+  margin-top: 10px;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.bubble-desc {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.bubble-card:hover {
+  transform: rotate(var(--tilt, 0deg)) translateY(-2px);
+}
