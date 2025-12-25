@@ -1,3 +1,4 @@
+// profile.js
 import { supabase } from "./supabase.js";
 
 const msgEl = document.getElementById("profileMsg");
@@ -22,12 +23,11 @@ const inDisplayName = document.getElementById("display_name");
 const inUsername = document.getElementById("username");
 const inBio = document.getElementById("bio");
 const inWebsite = document.getElementById("website");
-const inAvatarUrl = document.getElementById("avatar_url");
 
-const statAll = document.getElementById("statAll");
-const statPoem = document.getElementById("statPoem");
-const statSong = document.getElementById("statSong");
-const statImage = document.getElementById("statImage");
+const statAllEl = document.getElementById("statAll");
+const statPoemEl = document.getElementById("statPoem");
+const statSongEl = document.getElementById("statSong");
+const statImageEl = document.getElementById("statImage");
 
 const tabBtns = Array.from(document.querySelectorAll(".profile-tabs .tab"));
 
@@ -35,11 +35,7 @@ let currentUser = null;
 let currentProfile = null;
 
 let allPosts = [];
-let activeTab = "all";
-
-// post editing state
-let editingPostId = null;
-let postSaving = false;
+let activeTab = "all"; // all | poem | song | image
 
 function setMsg(text) {
   if (msgEl) msgEl.textContent = text || "";
@@ -69,47 +65,48 @@ function safeText(el, value) {
   el.textContent = value || "";
 }
 
-function normalizeWebsite(url) {
-  const v = (url || "").trim();
-  if (!v) return "";
-  if (/^https?:\/\//i.test(v)) return v;
-  return "https://" + v;
-}
-
 function showWebsite(url) {
   if (!websiteEl) return;
-  const v = normalizeWebsite(url);
+
+  const v = (url || "").trim();
   if (!v) {
     websiteEl.style.display = "none";
     websiteEl.textContent = "";
     websiteEl.removeAttribute("href");
     return;
   }
+
   websiteEl.style.display = "inline-block";
   websiteEl.textContent = v;
   websiteEl.href = v;
 }
 
-function setBigAvatar(profile, userEmail) {
+function setAvatarLetter(displayName, email) {
   if (!avatarBigEl) return;
 
-  const dn = (profile?.display_name || "").trim();
-  const un = (profile?.username || "").trim();
-  const email = (userEmail || "").trim();
-  const url = (profile?.avatar_url || "").trim();
+  const letter =
+    ((displayName || "").trim()[0] ||
+      (email || "").trim()[0] ||
+      "U").toUpperCase();
 
-  const nameSource = dn || un || email || "U";
-  const letter = (nameSource[0] || "U").toUpperCase();
+  avatarBigEl.textContent = letter;
+}
 
-  if (url) {
-    avatarBigEl.textContent = "";
-    avatarBigEl.style.backgroundImage = `url("${url}")`;
-    avatarBigEl.classList.add("has-img");
-  } else {
-    avatarBigEl.textContent = letter;
-    avatarBigEl.style.backgroundImage = "";
-    avatarBigEl.classList.remove("has-img");
-  }
+function formatDate(ts) {
+  if (!ts) return "";
+  return new Date(ts).toLocaleString();
+}
+
+function openEdit() {
+  if (!editPanel) return;
+  editPanel.style.display = "block";
+  setFeedMsg("");
+}
+
+function closeEdit() {
+  if (!editPanel) return;
+  editPanel.style.display = "none";
+  setFeedMsg("");
 }
 
 async function requireUser() {
@@ -128,15 +125,6 @@ async function requireUser() {
   return data.user;
 }
 
-function cleanUsernameFromEmail(email) {
-  const local = (email || "").split("@")[0] || "user";
-  const cleaned = local
-    .toLowerCase()
-    .replace(/[^a-z0-9_]/g, "")
-    .slice(0, 20);
-  return cleaned || "user";
-}
-
 async function loadProfile(user) {
   setMsg("");
   setFeedMsg("");
@@ -149,21 +137,29 @@ async function loadProfile(user) {
 
   if (error) {
     console.error("profiles select error", error);
-    setMsg("Profile load failed: " + error.message);
+    setMsg(
+      "Profile load failed. Make sure you have a 'profiles' table with columns: id, display_name, username, bio, website, avatar_url."
+    );
     return null;
   }
 
   if (data) return data;
 
-  const base = cleanUsernameFromEmail(user.email || "");
+  // Create one if missing
+  const baseUsername =
+    (user.email || "user")
+      .split("@")[0]
+      .replace(/[^a-zA-Z0-9_]/g, "")
+      .slice(0, 24) || "user";
+
   const createPayload = {
     id: user.id,
-    display_name: base,
-    username: base,
+    display_name: "",
+    username: baseUsername,
     bio: "",
     website: "",
     avatar_url: "",
-    updated_at: new Date().toISOString()
+    updated_at: new Date().toISOString(),
   };
 
   const { data: created, error: createErr } = await supabase
@@ -182,191 +178,91 @@ async function loadProfile(user) {
 }
 
 function renderProfile(user, profile) {
-  const dn = (profile?.display_name || "").trim();
-  const un = (profile?.username || "").trim();
-  const bio = (profile?.bio || "").trim();
-  const website = (profile?.website || "").trim();
+  const dn = (profile.display_name || "").trim();
+  const un = (profile.username || "").trim();
+  const bio = (profile.bio || "").trim();
+  const website = (profile.website || "").trim();
 
   safeText(displayNameEl, dn || "No display name yet");
   safeText(usernameEl, un ? "@" + un : "@(no username)");
-  safeText(emailEl, user?.email || "");
+  safeText(emailEl, user.email || "");
   safeText(bioEl, bio || "No bio yet.");
   showWebsite(website);
 
-  setBigAvatar(profile, user?.email || "");
+  setAvatarLetter(dn || un, user.email || "");
 
+  // preload form values
   if (inDisplayName) inDisplayName.value = dn;
   if (inUsername) inUsername.value = un;
   if (inBio) inBio.value = bio;
   if (inWebsite) inWebsite.value = website;
-  if (inAvatarUrl) inAvatarUrl.value = (profile?.avatar_url || "").trim();
-}
-
-function openEdit() {
-  if (!editPanel) return;
-  editPanel.style.display = "block";
-  setFeedMsg("");
-}
-
-function closeEdit() {
-  if (!editPanel) return;
-  editPanel.style.display = "none";
-  setFeedMsg("");
-}
-
-function formatDate(ts) {
-  if (!ts) return "";
-  return new Date(ts).toLocaleString();
-}
-
-function setActiveTab(tab) {
-  activeTab = tab;
-
-  tabBtns.forEach((btn) => {
-    const isOn = btn.getAttribute("data-tab") === tab;
-    btn.classList.toggle("active", isOn);
-    btn.setAttribute("aria-selected", isOn ? "true" : "false");
-  });
-
-  // close any open post editor when switching tabs
-  editingPostId = null;
-  renderFeed();
 }
 
 function updateStats(posts) {
-  const poemCount = posts.filter((p) => p.type === "poem").length;
-  const songCount = posts.filter((p) => p.type === "song").length;
-  const imageCount = posts.filter((p) => p.type === "image").length;
+  const total = posts.length;
+  const poems = posts.filter((p) => p.type === "poem").length;
+  const songs = posts.filter((p) => p.type === "song").length;
+  const images = posts.filter((p) => p.type === "image").length;
 
-  if (statAll) statAll.textContent = String(posts.length);
-  if (statPoem) statPoem.textContent = String(poemCount);
-  if (statSong) statSong.textContent = String(songCount);
-  if (statImage) statImage.textContent = String(imageCount);
+  if (statAllEl) statAllEl.textContent = String(total);
+  if (statPoemEl) statPoemEl.textContent = String(poems);
+  if (statSongEl) statSongEl.textContent = String(songs);
+  if (statImageEl) statImageEl.textContent = String(images);
 }
 
 function getFilteredPosts() {
-  if (activeTab === "all") return allPosts;
+  if (activeTab === "all") return allPosts.slice();
   return allPosts.filter((p) => p.type === activeTab);
 }
 
-function makePostBody(p) {
-  if (p.type === "poem") {
-    const body = (p.body_text || "").trim();
-    return `<div class="profile-body">${escapeHtml(body)}</div>`;
-  }
-
-  if (p.type === "song") {
-    const u = (p.song_url || "").trim();
-    if (!u) return `<div class="profile-body">(No link)</div>`;
-    const safe = escapeHtml(u);
-    return `
-      <div class="profile-body">
-        <a class="open-link" href="${safe}" target="_blank" rel="noreferrer">Open link</a>
-        <div class="link-line">${safe}</div>
-      </div>
-    `;
-  }
-
-  if (p.type === "image") {
-    const u = (p.image_url || "").trim();
-    if (!u) return `<div class="profile-body">(No image)</div>`;
-    const safe = escapeHtml(u);
-    return `
-      <div class="profile-body">
-        <img class="post-img" src="${safe}" alt="Uploaded artwork">
-      </div>
-    `;
-  }
-
-  return `<div class="profile-body"></div>`;
-}
-
-function makeEditForm(p) {
-  const id = escapeHtml(p.id);
-  const type = p.type || "poem";
-  const title = escapeHtml((p.title || "").trim());
-
-  const poemBody = escapeHtml((p.body_text || "").trim());
-  const songUrl = escapeHtml((p.song_url || "").trim());
-  const imageUrl = escapeHtml((p.image_url || "").trim());
-
-  let typeFields = "";
-  if (type === "poem") {
-    typeFields = `
-      <div class="edit-row">
-        <label>Poem text</label>
-        <textarea class="edit-input" data-field="body_text" rows="6" placeholder="Write your poem...">${poemBody}</textarea>
-      </div>
-    `;
-  } else if (type === "song") {
-    typeFields = `
-      <div class="edit-row">
-        <label>Song link</label>
-        <input class="edit-input" data-field="song_url" type="url" value="${songUrl}" placeholder="https://...">
-      </div>
-    `;
-  } else if (type === "image") {
-    typeFields = `
-      <div class="edit-row">
-        <label>Image URL</label>
-        <input class="edit-input" data-field="image_url" type="url" value="${imageUrl}" placeholder="https://...">
-      </div>
-    `;
-  }
-
-  return `
-    <div class="post-edit" data-editing="1">
-      <div class="edit-row">
-        <label>Title</label>
-        <input class="edit-input" data-field="title" type="text" value="${title}" maxlength="80" placeholder="Title">
-      </div>
-
-      ${typeFields}
-
-      <div class="edit-actions-row">
-        <button class="btn btn-solid post-save" type="button" data-action="save-edit" data-id="${id}">
-          ${postSaving ? "Saving..." : "Save changes"}
-        </button>
-        <button class="btn btn-ghost post-cancel" type="button" data-action="cancel-edit" data-id="${id}">
-          Cancel
-        </button>
-        <div class="post-edit-msg" data-edit-msg="${id}"></div>
-      </div>
-    </div>
-  `;
+function getHideLabel(status) {
+  return status === "hidden" ? "Unhide" : "Hide";
 }
 
 function renderPostCard(p) {
   const id = escapeHtml(p.id);
   const title = escapeHtml(p.title || "Untitled");
   const date = formatDate(p.created_at);
-  const status = escapeHtml(p.status || "pending");
   const type = escapeHtml(p.type || "");
-  const isHidden = !!p.is_hidden;
-  const hideLabel = isHidden ? "Unhide" : "Hide";
-  const hiddenBadge = isHidden ? '<span class="badge badge-hidden">Hidden</span>' : "";
+  const status = escapeHtml(p.status || "");
 
-  const isEditing = String(editingPostId || "") === String(p.id);
+  let bodyHtml = "";
+  if (p.type === "poem") {
+    bodyHtml = `<div class="profile-body">${escapeHtml(p.body_text || "").replaceAll("\n", "<br>")}</div>`;
+  } else if (p.type === "song") {
+    const u = escapeHtml(p.song_url || "");
+    bodyHtml = u
+      ? `<div class="profile-body"><a class="open-link" href="${u}" target="_blank" rel="noreferrer">Open link</a></div>`
+      : `<div class="profile-body">(no song link)</div>`;
+  } else if (p.type === "image") {
+    const u = escapeHtml(p.image_url || "");
+    bodyHtml = u
+      ? `<div class="profile-body"><img class="post-img" src="${u}" alt="Artwork"></div>`
+      : `<div class="profile-body">(no image)</div>`;
+  }
+
+  const hideLabel = getHideLabel(p.status);
 
   return `
     <article class="profile-post" data-id="${id}">
-      <div class="profile-post-top">
-        <h3>${title}</h3>
+      <div class="post-top">
+        <div class="post-left">
+          <h3>${title}</h3>
+          <div class="profile-meta">
+            <span>${escapeHtml(date)}</span>
+            <span class="badge">${type}</span>
+            <span class="badge">${status}</span>
+          </div>
+        </div>
+
         <div class="post-actions">
-          <button class="edit-btn" type="button" data-action="edit" data-id="${id}">Edit</button>
-          <button class="hide-btn" type="button" data-action="toggle-hide" data-id="${id}">${hideLabel}</button>
-          <button class="delete-btn" type="button" data-action="delete" data-id="${id}">Delete</button>
+          <button class="btn btn-outline post-edit" type="button" data-action="edit">Edit</button>
+          <button class="btn btn-ghost post-hide" type="button" data-action="hide">${escapeHtml(hideLabel)}</button>
+          <button class="btn btn-danger post-delete" type="button" data-action="delete">Delete</button>
         </div>
       </div>
 
-      <div class="profile-meta">
-        <span>${escapeHtml(date)}</span>
-        <span class="badge">${type}</span>
-        ${hiddenBadge}
-        <span class="badge badge-muted">${status}</span>
-      </div>
-
-      ${isEditing ? makeEditForm(p) : makePostBody(p)}
+      ${bodyHtml}
     </article>
   `;
 }
@@ -375,12 +271,10 @@ function renderFeed() {
   if (!feedEl) return;
 
   const posts = getFilteredPosts();
-  updateStats(allPosts);
 
-  if (!posts.length) {
+  if (posts.length === 0) {
     feedEl.innerHTML = "";
-    if (activeTab === "all") setFeedMsg("No submissions yet.");
-    else setFeedMsg("No submissions in this tab yet.");
+    setFeedMsg("No submissions in this tab yet.");
     return;
   }
 
@@ -392,12 +286,11 @@ async function loadMyPosts(user) {
   if (!feedEl) return;
 
   feedEl.innerHTML = "";
-  setMsg("");
   setFeedMsg("Loading your submissions...");
 
   const { data, error } = await supabase
     .from("posts")
-    .select("id, type, title, body_text, song_url, image_url, status, created_at, is_hidden")
+    .select("id, type, title, body_text, song_url, image_url, status, created_at, user_id")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -407,33 +300,166 @@ async function loadMyPosts(user) {
     return;
   }
 
-  allPosts = Array.isArray(data) ? data : [];
-  editingPostId = null;
+  allPosts = data || [];
+  updateStats(allPosts);
   renderFeed();
 }
 
-async function usernameAvailable(username, myId) {
-  const u = (username || "").trim();
-  if (!u) return true;
+function setActiveTab(tab) {
+  activeTab = tab;
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("username", u)
-    .neq("id", myId)
-    .limit(1);
+  tabBtns.forEach((btn) => {
+    const isActive = btn.getAttribute("data-tab") === tab;
+    btn.classList.toggle("active", isActive);
+    btn.setAttribute("aria-selected", isActive ? "true" : "false");
+  });
 
-  if (error) return true;
-  return !data || data.length === 0;
+  renderFeed();
 }
 
-async function deletePostById(postId) {
+function ensurePostModal() {
+  if (document.getElementById("postEditModal")) return;
+
+  const modal = document.createElement("div");
+  modal.id = "postEditModal";
+  modal.className = "post-modal";
+  modal.setAttribute("aria-hidden", "true");
+
+  modal.innerHTML = `
+    <div class="post-modal-backdrop" data-close="1"></div>
+    <div class="post-modal-panel" role="dialog" aria-modal="true" aria-label="Edit post">
+      <div class="post-modal-header">
+        <div class="post-modal-title">Edit post</div>
+        <button class="post-modal-close btn btn-ghost" type="button" data-close="1">Close</button>
+      </div>
+
+      <form id="postEditForm" class="post-modal-form">
+        <div class="field">
+          <label for="postTitle">Title</label>
+          <input id="postTitle" type="text" maxlength="80" required>
+        </div>
+
+        <div class="field" id="poemFieldWrap">
+          <label for="postBody">Poem text</label>
+          <textarea id="postBody" rows="8"></textarea>
+        </div>
+
+        <div class="field" id="songFieldWrap">
+          <label for="postSongUrl">Song URL</label>
+          <input id="postSongUrl" type="url" maxlength="400">
+        </div>
+
+        <div class="field" id="imageFieldWrap">
+          <label for="postImageUrl">Image URL</label>
+          <input id="postImageUrl" type="url" maxlength="400">
+        </div>
+
+        <div class="edit-actions">
+          <button id="postSaveBtn" class="btn btn-solid" type="submit">Save changes</button>
+        </div>
+
+        <p id="postEditMsg" class="profile-msg"></p>
+      </form>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  modal.addEventListener("click", (e) => {
+    if (e.target.closest("[data-close='1']")) closePostModal();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closePostModal();
+  });
+}
+
+let editingPostId = null;
+let editingPostType = null;
+
+function openPostModal(post) {
+  ensurePostModal();
+
+  const modal = document.getElementById("postEditModal");
+  const formEl = document.getElementById("postEditForm");
+  const msg = document.getElementById("postEditMsg");
+
+  const titleEl = document.getElementById("postTitle");
+  const bodyEl = document.getElementById("postBody");
+  const songUrlEl = document.getElementById("postSongUrl");
+  const imageUrlEl = document.getElementById("postImageUrl");
+
+  const poemWrap = document.getElementById("poemFieldWrap");
+  const songWrap = document.getElementById("songFieldWrap");
+  const imageWrap = document.getElementById("imageFieldWrap");
+
+  editingPostId = post.id;
+  editingPostType = post.type;
+
+  if (msg) msg.textContent = "";
+
+  if (titleEl) titleEl.value = post.title || "";
+
+  if (poemWrap) poemWrap.style.display = post.type === "poem" ? "block" : "none";
+  if (songWrap) songWrap.style.display = post.type === "song" ? "block" : "none";
+  if (imageWrap) imageWrap.style.display = post.type === "image" ? "block" : "none";
+
+  if (bodyEl) bodyEl.value = post.body_text || "";
+  if (songUrlEl) songUrlEl.value = post.song_url || "";
+  if (imageUrlEl) imageUrlEl.value = post.image_url || "";
+
+  if (formEl) {
+    formEl.onsubmit = async (e) => {
+      e.preventDefault();
+      if (!currentUser || !editingPostId) return;
+
+      const payload = {
+        title: (titleEl?.value || "").trim(),
+      };
+
+      if (editingPostType === "poem") payload.body_text = (bodyEl?.value || "").trim();
+      if (editingPostType === "song") payload.song_url = (songUrlEl?.value || "").trim();
+      if (editingPostType === "image") payload.image_url = (imageUrlEl?.value || "").trim();
+
+      const { error } = await supabase
+        .from("posts")
+        .update(payload)
+        .eq("id", editingPostId)
+        .eq("user_id", currentUser.id);
+
+      if (error) {
+        console.error("edit post error", error);
+        if (msg) msg.textContent = "Save failed: " + error.message;
+        return;
+      }
+
+      await loadMyPosts(currentUser);
+      closePostModal();
+    };
+  }
+
+  modal.classList.add("is-open");
+  modal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal-open");
+}
+
+function closePostModal() {
+  const modal = document.getElementById("postEditModal");
+  if (!modal) return;
+
+  editingPostId = null;
+  editingPostType = null;
+
+  modal.classList.remove("is-open");
+  modal.setAttribute("aria-hidden", "true");
+  document.body.classList.remove("modal-open");
+}
+
+async function handleDeletePost(postId) {
   if (!currentUser) return;
 
-  const ok = confirm("Delete this post? This cannot be undone.");
+  const ok = window.confirm("Delete this post? This cannot be undone.");
   if (!ok) return;
-
-  setFeedMsg("Deleting...");
 
   const { error } = await supabase
     .from("posts")
@@ -442,156 +468,66 @@ async function deletePostById(postId) {
     .eq("user_id", currentUser.id);
 
   if (error) {
-    console.error("delete error", error);
+    console.error("delete post error", error);
     setFeedMsg("Delete failed: " + error.message);
     return;
   }
 
-  allPosts = allPosts.filter((p) => String(p.id) !== String(postId));
-  editingPostId = null;
-  renderFeed();
-  setFeedMsg("Deleted.");
-  setTimeout(() => setFeedMsg(""), 900);
+  await loadMyPosts(currentUser);
 }
 
-async function toggleHidden(postId) {
+async function handleToggleHide(post) {
   if (!currentUser) return;
 
-  const post = allPosts.find((p) => String(p.id) === String(postId));
-  if (!post) return;
+  const nextStatus = post.status === "hidden" ? "approved" : "hidden";
 
-  const nextHidden = !post.is_hidden;
-  setFeedMsg(nextHidden ? "Hiding..." : "Making visible...");
-
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("posts")
-    .update({ is_hidden: nextHidden })
-    .eq("id", postId)
-    .eq("user_id", currentUser.id)
-    .select("id, type, title, body_text, song_url, image_url, status, created_at, is_hidden")
-    .maybeSingle();
+    .update({ status: nextStatus })
+    .eq("id", post.id)
+    .eq("user_id", currentUser.id);
 
   if (error) {
-    console.error("hide toggle error", error);
-    setFeedMsg("Update failed: " + error.message);
+    console.error("hide post error", error);
+    setFeedMsg("Hide failed: " + error.message);
     return;
   }
 
-  if (data) {
-    allPosts = allPosts.map((p) => (String(p.id) === String(postId) ? data : p));
-  } else {
-    // If RLS prevents returning rows, refetch to confirm change landed
-    await loadMyPosts(currentUser);
-  }
-
-  // make sure UI reflects DB state
-  if (!data) {
-    await loadMyPosts(currentUser);
-  } else {
-    renderFeed();
-  }
-
-  setFeedMsg(nextHidden ? "Hidden from public pages." : "Visible on public pages.");
-  setTimeout(() => setFeedMsg(""), 900);
+  await loadMyPosts(currentUser);
 }
 
-function setInlineEditMsg(postId, text) {
-  const el = document.querySelector(`[data-edit-msg="${CSS.escape(String(postId))}"]`);
-  if (!el) return;
-  el.textContent = text || "";
-}
+function setupFeedActions() {
+  if (!feedEl) return;
 
-function readEditValuesFromCard(cardEl, type) {
-  const titleEl = cardEl.querySelector(`[data-field="title"]`);
-  const title = (titleEl?.value || "").trim();
+  feedEl.addEventListener("click", async (e) => {
+    const postEl = e.target.closest(".profile-post");
+    if (!postEl) return;
 
-  const payload = { title };
+    const actionBtn = e.target.closest("[data-action]");
+    if (!actionBtn) return;
 
-  if (type === "poem") {
-    const bodyEl = cardEl.querySelector(`[data-field="body_text"]`);
-    payload.body_text = (bodyEl?.value || "").trim();
-  } else if (type === "song") {
-    const urlEl = cardEl.querySelector(`[data-field="song_url"]`);
-    payload.song_url = (urlEl?.value || "").trim();
-  } else if (type === "image") {
-    const urlEl = cardEl.querySelector(`[data-field="image_url"]`);
-    payload.image_url = (urlEl?.value || "").trim();
-  }
+    const postId = postEl.getAttribute("data-id");
+    if (!postId) return;
 
-  return payload;
-}
+    const action = actionBtn.getAttribute("data-action");
+    const post = allPosts.find((p) => String(p.id) === String(postId));
+    if (!post) return;
 
-function validatePostUpdate(type, payload) {
-  if (!payload.title) return "Title is required.";
+    if (action === "delete") {
+      await handleDeletePost(postId);
+      return;
+    }
 
-  if (type === "poem") {
-    if (!payload.body_text) return "Poem text is required.";
-  }
-  if (type === "song") {
-    if (!payload.song_url) return "Song link is required.";
-  }
-  if (type === "image") {
-    if (!payload.image_url) return "Image URL is required.";
-  }
+    if (action === "hide") {
+      await handleToggleHide(post);
+      return;
+    }
 
-  return "";
-}
-
-async function savePostEdits(postId, cardEl) {
-  if (!currentUser) return;
-
-  const post = allPosts.find((p) => String(p.id) === String(postId));
-  if (!post) return;
-
-  const type = post.type || "poem";
-  const payload = readEditValuesFromCard(cardEl, type);
-  const errText = validatePostUpdate(type, payload);
-  if (errText) {
-    setInlineEditMsg(postId, errText);
-    return;
-  }
-
-  setInlineEditMsg(postId, "");
-  postSaving = true;
-  renderFeed();
-
-  const updatePayload = { title: payload.title };
-
-  if (type === "poem") updatePayload.body_text = payload.body_text;
-  if (type === "song") updatePayload.song_url = payload.song_url;
-  if (type === "image") updatePayload.image_url = payload.image_url;
-
-  const { data, error } = await supabase
-    .from("posts")
-    .update(updatePayload)
-    .eq("id", postId)
-    .eq("user_id", currentUser.id)
-    .select("id, type, title, body_text, song_url, image_url, status, created_at, is_hidden")
-    .maybeSingle();
-
-  postSaving = false;
-
-  if (error) {
-    console.error("update post error", error);
-    renderFeed();
-    setInlineEditMsg(postId, "Save failed: " + error.message);
-    return;
-  }
-
-  if (data) {
-    allPosts = allPosts.map((p) => (String(p.id) === String(postId) ? data : p));
-  } else {
-    // fallback if select is blocked by policy
-    allPosts = allPosts.map((p) => {
-      if (String(p.id) !== String(postId)) return p;
-      return { ...p, ...updatePayload };
-    });
-  }
-
-  editingPostId = null;
-  renderFeed();
-  setFeedMsg("Updated.");
-  setTimeout(() => setFeedMsg(""), 900);
+    if (action === "edit") {
+      openPostModal(post);
+      return;
+    }
+  });
 }
 
 editBtn?.addEventListener("click", openEdit);
@@ -602,45 +538,6 @@ tabBtns.forEach((btn) => {
     const tab = btn.getAttribute("data-tab") || "all";
     setActiveTab(tab);
   });
-});
-
-feedEl?.addEventListener("click", (e) => {
-  const actionEl = e.target.closest("[data-action]");
-  if (!actionEl) return;
-
-  const action = actionEl.getAttribute("data-action");
-  const id = actionEl.getAttribute("data-id");
-  if (!id) return;
-
-  if (action === "delete") {
-    deletePostById(id);
-    return;
-  }
-
-  if (action === "toggle-hide") {
-    toggleHidden(id);
-    return;
-  }
-
-  if (action === "edit") {
-    editingPostId = String(editingPostId) === String(id) ? null : id;
-    postSaving = false;
-    renderFeed();
-    return;
-  }
-
-  if (action === "cancel-edit") {
-    editingPostId = null;
-    postSaving = false;
-    renderFeed();
-    return;
-  }
-
-  if (action === "save-edit") {
-    const cardEl = actionEl.closest(".profile-post");
-    if (!cardEl) return;
-    savePostEdits(id, cardEl);
-  }
 });
 
 form?.addEventListener("submit", async (e) => {
@@ -655,16 +552,9 @@ form?.addEventListener("submit", async (e) => {
     const username = (inUsername?.value || "").trim();
     const bio = (inBio?.value || "").trim();
     const website = (inWebsite?.value || "").trim();
-    const avatar_url = (inAvatarUrl?.value || "").trim();
 
     if (username && !/^[a-zA-Z0-9_]{3,24}$/.test(username)) {
       setFeedMsg("Username must be 3 to 24 characters (letters, numbers, underscore).");
-      return;
-    }
-
-    const isFree = await usernameAvailable(username, currentUser.id);
-    if (!isFree) {
-      setFeedMsg("That username is taken. Try another one.");
       return;
     }
 
@@ -673,9 +563,8 @@ form?.addEventListener("submit", async (e) => {
       display_name,
       username,
       bio,
-      website: normalizeWebsite(website),
-      avatar_url,
-      updated_at: new Date().toISOString()
+      website,
+      updated_at: new Date().toISOString(),
     };
 
     const { data, error } = await supabase
@@ -694,7 +583,6 @@ form?.addEventListener("submit", async (e) => {
     renderProfile(currentUser, currentProfile);
     closeEdit();
     setMsg("Saved.");
-    setTimeout(() => setMsg(""), 900);
   } catch (err) {
     console.error("save exception", err);
     setFeedMsg("Save failed. Check console for details.");
@@ -704,6 +592,8 @@ form?.addEventListener("submit", async (e) => {
 });
 
 async function init() {
+  setupFeedActions();
+
   currentUser = await requireUser();
   if (!currentUser) return;
 
@@ -713,15 +603,21 @@ async function init() {
   renderProfile(currentUser, currentProfile);
   await loadMyPosts(currentUser);
 
+  // default tab
+  setActiveTab("all");
+
   supabase.auth.onAuthStateChange(async (_event, session) => {
     if (!session || !session.user) {
       window.location.href = "login.html";
       return;
     }
     currentUser = session.user;
+
     currentProfile = await loadProfile(currentUser);
     if (currentProfile) renderProfile(currentUser, currentProfile);
+
     await loadMyPosts(currentUser);
+    setActiveTab(activeTab);
   });
 }
 
