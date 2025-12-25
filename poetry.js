@@ -1,3 +1,4 @@
+// poetry.js
 import { supabase } from "./supabase.js";
 
 const listEl = document.getElementById("list");
@@ -29,10 +30,6 @@ let isLoading = false;
 let hasMore = true;
 
 let viewMode = "cards";
-let selectedTag = null;
-
-let supportsTags = true;
-let supportsProfilesJoin = true;
 let observer = null;
 
 let loadedMap = new Map();
@@ -60,22 +57,37 @@ function shortUserId(id) {
   return s.length >= 8 ? s.slice(0, 8) : s;
 }
 
-function getAuthorNameFromProfileRow(profileRow, userId) {
-  const p = profileRow || {};
-  return (
-    p.display_name ||
-    p.username ||
-    p.full_name ||
-    p.email ||
-    `User: ${shortUserId(userId)}`
-  );
-}
+async function attachAuthors(posts) {
+  const arr = posts || [];
+  const ids = [...new Set(arr.map((p) => p.user_id).filter(Boolean))];
 
-function attachAuthorName(poem) {
-  // When join works, Supabase usually returns a nested object under "profiles"
-  // If you used a different relationship name, you can adjust here.
-  const profile = poem.profiles || poem.profile || null;
-  return { ...poem, author_name: getAuthorNameFromProfileRow(profile, poem.user_id) };
+  if (ids.length === 0) {
+    return arr.map((p) => ({
+      ...p,
+      author_name: `User: ${shortUserId(p.user_id)}`
+    }));
+  }
+
+  const { data: profs, error } = await supabase
+    .from("profiles")
+    .select("id, username, display_name")
+    .in("id", ids);
+
+  const map = new Map();
+  if (!error && Array.isArray(profs)) {
+    profs.forEach((p) => {
+      const name = (p.display_name || p.username || "").trim();
+      if (name) map.set(p.id, name);
+    });
+  }
+
+  return arr.map((p) => {
+    const name = map.get(p.user_id);
+    return {
+      ...p,
+      author_name: name ? name : `User: ${shortUserId(p.user_id)}`
+    };
+  });
 }
 
 function makePreview(bodyText) {
@@ -134,7 +146,6 @@ function setResultsBar(loadedCount) {
   bits.push(`Showing ${loadedCount}`);
 
   if (q) bits.push(`matching "${q}"`);
-  if (selectedTag) bits.push(`tag: ${selectedTag}`);
   if (time !== "all") bits.push(`time: ${time}`);
   if (len !== "all") bits.push(`length: ${len}`);
   bits.push(`sort: ${sort}`);
@@ -179,23 +190,14 @@ function resetFeed() {
   setResultsBar(0);
 }
 
-function buildBaseQuery(includeTags) {
+function buildBaseQuery() {
   const q = (searchInput?.value || "").trim();
   const startISO = timeStartISO();
   const sort = sortSel ? sortSel.value : "newest";
 
-  // Try profiles join if available
-  // This assumes you have a "profiles" table with a relationship to posts.user_id
-  // If it errors, we fallback automatically.
-  let selectCols = "id, title, body_text, created_at, user_id";
-  if (supportsProfilesJoin) {
-    selectCols += ", profiles (display_name, username, full_name, email)";
-  }
-  if (includeTags) selectCols += ", tags";
-
   let query = supabase
     .from("posts")
-    .select(selectCols)
+    .select("id, title, body_text, created_at, user_id")
     .eq("type", "poem")
     .eq("status", "approved");
 
@@ -204,10 +206,6 @@ function buildBaseQuery(includeTags) {
   if (q) {
     const safe = q.replaceAll("%", "\\%").replaceAll("_", "\\_").replaceAll(",", " ");
     query = query.or(`title.ilike.%${safe}%,body_text.ilike.%${safe}%`);
-  }
-
-  if (selectedTag && includeTags) {
-    query = query.contains("tags", [selectedTag]);
   }
 
   if (sort === "oldest") query = query.order("created_at", { ascending: true });
@@ -274,28 +272,27 @@ function renderCompactRow(p) {
 function appendPosts(posts, isFirstPage) {
   if (!listEl || !posts || posts.length === 0) return;
 
-  posts = posts.map(attachAuthorName);
-
   posts.forEach((p) => loadedMap.set(String(p.id), p));
 
   const q = (searchInput?.value || "").trim();
   const canFeature =
     isFirstPage &&
     !q &&
-    !selectedTag &&
     (!timeSel || timeSel.value === "all") &&
     (!lenSel || lenSel.value === "all") &&
     (!sortSel || sortSel.value === "newest");
 
+  let toRender = posts;
+
   if (canFeature && posts.length > 0) {
     renderFeatured(posts[0]);
-    posts = posts.slice(1);
+    toRender = posts.slice(1);
   }
 
   if (viewMode === "compact") {
-    listEl.insertAdjacentHTML("beforeend", posts.map(renderCompactRow).join(""));
+    listEl.insertAdjacentHTML("beforeend", toRender.map(renderCompactRow).join(""));
   } else {
-    listEl.insertAdjacentHTML("beforeend", posts.map(renderCard).join(""));
+    listEl.insertAdjacentHTML("beforeend", toRender.map(renderCard).join(""));
   }
 }
 
@@ -314,32 +311,8 @@ async function fetchPage() {
   while (collected.length < PAGE_SIZE && tries < 6 && hasMore) {
     tries += 1;
 
-    let query = buildBaseQuery(supportsTags).range(offset, offset + PAGE_SIZE - 1);
-    let res = await query;
-
-    // If profiles join breaks, retry without it
-    if (res.error && supportsProfilesJoin) {
-      supportsProfilesJoin = false;
-      query = buildBaseQuery(supportsTags).range(offset, offset + PAGE_SIZE - 1);
-      res = await query;
-    }
-
-    // If tags breaks, retry without tags
-    if (res.error && supportsTags) {
-      supportsTags = false;
-      if (tagsRow) tagsRow.style.display = "none";
-      selectedTag = null;
-
-      query = buildBaseQuery(false).range(offset, offset + PAGE_SIZE - 1);
-      res = await query;
-
-      // If still errors because of profiles join, disable that too
-      if (res.error && supportsProfilesJoin) {
-        supportsProfilesJoin = false;
-        query = buildBaseQuery(false).range(offset, offset + PAGE_SIZE - 1);
-        res = await query;
-      }
-    }
+    const query = buildBaseQuery().range(offset, offset + PAGE_SIZE - 1);
+    const res = await query;
 
     if (res.error) {
       setMsg("Error: " + res.error.message);
@@ -365,7 +338,8 @@ async function fetchPage() {
     setMsg("");
   }
 
-  appendPosts(collected.slice(0, PAGE_SIZE), offset <= PAGE_SIZE);
+  const withAuthors = await attachAuthors(collected.slice(0, PAGE_SIZE));
+  appendPosts(withAuthors, offset <= PAGE_SIZE);
 
   setResultsBar(loadedMap.size);
 
@@ -423,12 +397,10 @@ function openModal(poem) {
   const authorEl = document.getElementById("poemModalAuthor");
   const bodyEl = document.getElementById("poemModalBody");
 
-  const full = attachAuthorName(poem);
-
-  if (titleEl) titleEl.textContent = full.title || "Untitled";
-  if (metaEl) metaEl.textContent = formatDate(full.created_at);
-  if (authorEl) authorEl.textContent = `By ${full.author_name || `User: ${shortUserId(full.user_id)}`}`;
-  if (bodyEl) bodyEl.textContent = full.body_text || "";
+  if (titleEl) titleEl.textContent = poem.title || "Untitled";
+  if (metaEl) metaEl.textContent = formatDate(poem.created_at);
+  if (authorEl) authorEl.textContent = `By ${poem.author_name || `User: ${shortUserId(poem.user_id)}`}`;
+  if (bodyEl) bodyEl.textContent = poem.body_text || "";
 
   modal.classList.add("is-open");
   modal.setAttribute("aria-hidden", "false");
@@ -445,24 +417,21 @@ function closeModal() {
 }
 
 async function fetchSingleById(id) {
-  // Try join first, fallback if it fails
-  let cols = "id, title, body_text, created_at, user_id";
-  if (supportsProfilesJoin) cols += ", profiles (display_name, username, full_name, email)";
-
-  let res = await supabase.from("posts").select(cols).eq("id", id).maybeSingle();
-
-  if (res.error && supportsProfilesJoin) {
-    supportsProfilesJoin = false;
-    cols = "id, title, body_text, created_at, user_id";
-    res = await supabase.from("posts").select(cols).eq("id", id).maybeSingle();
-  }
+  const res = await supabase
+    .from("posts")
+    .select("id, title, body_text, created_at, user_id")
+    .eq("id", id)
+    .maybeSingle();
 
   if (res.error) {
     setMsg("Error opening poem: " + res.error.message);
     return null;
   }
 
-  return res.data ? attachAuthorName(res.data) : null;
+  if (!res.data) return null;
+
+  const arr = await attachAuthors([res.data]);
+  return arr[0] || null;
 }
 
 async function handleOpenById(id) {
@@ -498,46 +467,8 @@ function setupClickOpen(container) {
 }
 
 async function buildTagsChips() {
-  if (!supportsTags || !tagsRow || !tagsChips) return;
-
-  const { data, error } = await supabase
-    .from("posts")
-    .select("tags")
-    .eq("type", "poem")
-    .eq("status", "approved")
-    .order("created_at", { ascending: false })
-    .limit(50);
-
-  if (error) {
-    supportsTags = false;
-    tagsRow.style.display = "none";
-    selectedTag = null;
-    return;
-  }
-
-  const set = new Set();
-  (data || []).forEach((row) => {
-    const tags = row?.tags;
-    if (Array.isArray(tags)) tags.forEach((t) => set.add(String(t)));
-  });
-
-  const tags = Array.from(set).slice(0, 12);
-
-  if (tags.length === 0) {
-    tagsRow.style.display = "none";
-    return;
-  }
-
-  tagsRow.style.display = "flex";
-  tagsChips.innerHTML = `
-    <button class="chip ${selectedTag ? "" : "is-active"}" type="button" data-tag="">All</button>
-    ${tags
-      .map((t) => {
-        const active = selectedTag === t ? "is-active" : "";
-        return `<button class="chip ${active}" type="button" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</button>`;
-      })
-      .join("")}
-  `;
+  if (tagsRow) tagsRow.style.display = "none";
+  if (tagsChips) tagsChips.innerHTML = "";
 }
 
 function setupInfiniteScroll() {
@@ -592,18 +523,6 @@ if (viewCardsBtn) {
 if (viewCompactBtn) {
   viewCompactBtn.addEventListener("click", () => {
     setView("compact");
-    applyAll();
-  });
-}
-
-if (tagsChips) {
-  tagsChips.addEventListener("click", (e) => {
-    const btn = e.target.closest(".chip");
-    if (!btn) return;
-
-    const tag = btn.getAttribute("data-tag");
-    selectedTag = tag ? tag : null;
-
     applyAll();
   });
 }
