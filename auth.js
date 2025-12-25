@@ -48,12 +48,13 @@ async function ensureProfile(user) {
     const { data: inserted, error: insErr } = await supabase
       .from("profiles")
       .insert({
-        id: user.id,
-        username: candidate,
-        display_name: "",
-        bio: "",
-        website: ""
-      })
+  id: user.id,
+  username: candidate,
+  display_name: candidate,
+  bio: "",
+  website: ""
+})
+
       .select("id,username,display_name,bio,website,avatar_url")
       .single();
 
@@ -169,10 +170,23 @@ async function handleSignup(e) {
   e.preventDefault();
   setMsg("Creating account...");
 
-  const email = document.getElementById("email").value.trim();
-  const password = document.getElementById("password").value;
+  const usernameEl = document.getElementById("username");
+const username = (usernameEl ? usernameEl.value : "").trim();
 
-  const { data, error } = await supabase.auth.signUp({ email, password });
+const email = document.getElementById("email").value.trim();
+const password = document.getElementById("password").value;
+
+const { data, error } = await supabase.auth.signUp({
+  email,
+  password,
+  options: {
+    data: {
+      username: username || null,
+      display_name: username || null
+    }
+  }
+});
+
 
   if (error) {
     setMsg(error.message);

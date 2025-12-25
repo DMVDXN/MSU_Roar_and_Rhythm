@@ -43,15 +43,19 @@
         <p class="auth-subtitle">Create your account to submit and manage your work.</p>
 
         <form id="signupForm">
-          <label for="email">Email</label>
-          <input id="email" type="email" required autocomplete="email">
+  <label for="username">Username</label>
+  <input id="username" type="text" minlength="3" maxlength="20" required autocomplete="username">
 
-          <label for="password">Password</label>
-          <input id="password" type="password" minlength="6" required autocomplete="new-password">
+  <label for="email">Email</label>
+  <input id="email" type="email" required autocomplete="email">
 
-          <button type="submit" id="signupBtn">Create account</button>
-          <p id="msg" class="msg"></p>
-        </form>
+  <label for="password">Password</label>
+  <input id="password" type="password" minlength="6" required autocomplete="new-password">
+
+  <button type="submit" id="signupBtn">Create account</button>
+  <p id="msg" class="msg"></p>
+</form>
+
 
         <p class="auth-link">
           Already have an account?

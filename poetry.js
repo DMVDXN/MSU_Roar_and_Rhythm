@@ -2,7 +2,6 @@ import { supabase } from "./supabase.js";
 
 const listEl = document.getElementById("list");
 const msgEl = document.getElementById("msg");
-
 const featuredWrap = document.getElementById("featuredWrap");
 
 const searchInput = document.querySelector(".search-input");
@@ -33,9 +32,9 @@ let viewMode = "cards";
 let selectedTag = null;
 
 let supportsTags = true;
+let supportsProfilesJoin = true;
 let observer = null;
 
-// Keep a local cache for modal open without refetch
 let loadedMap = new Map();
 
 function setMsg(text) {
@@ -54,6 +53,29 @@ function escapeHtml(value) {
 function formatDate(ts) {
   if (!ts) return "";
   return new Date(ts).toLocaleString();
+}
+
+function shortUserId(id) {
+  const s = String(id || "");
+  return s.length >= 8 ? s.slice(0, 8) : s;
+}
+
+function getAuthorNameFromProfileRow(profileRow, userId) {
+  const p = profileRow || {};
+  return (
+    p.display_name ||
+    p.username ||
+    p.full_name ||
+    p.email ||
+    `User: ${shortUserId(userId)}`
+  );
+}
+
+function attachAuthorName(poem) {
+  // When join works, Supabase usually returns a nested object under "profiles"
+  // If you used a different relationship name, you can adjust here.
+  const profile = poem.profiles || poem.profile || null;
+  return { ...poem, author_name: getAuthorNameFromProfileRow(profile, poem.user_id) };
 }
 
 function makePreview(bodyText) {
@@ -162,7 +184,13 @@ function buildBaseQuery(includeTags) {
   const startISO = timeStartISO();
   const sort = sortSel ? sortSel.value : "newest";
 
-  let selectCols = "id, title, body_text, created_at";
+  // Try profiles join if available
+  // This assumes you have a "profiles" table with a relationship to posts.user_id
+  // If it errors, we fallback automatically.
+  let selectCols = "id, title, body_text, created_at, user_id";
+  if (supportsProfilesJoin) {
+    selectCols += ", profiles (display_name, username, full_name, email)";
+  }
   if (includeTags) selectCols += ", tags";
 
   let query = supabase
@@ -192,12 +220,15 @@ function buildBaseQuery(includeTags) {
 function renderFeatured(p) {
   if (!featuredWrap) return;
 
+  const author = escapeHtml(p.author_name || `User: ${shortUserId(p.user_id)}`);
+
   featuredWrap.style.display = "block";
   featuredWrap.innerHTML = `
     <div class="featured-label">Featured</div>
     <article class="featured-card" data-id="${escapeHtml(p.id)}" role="button" tabindex="0" aria-label="Open poem">
       <h3 class="featured-title">${escapeHtml(p.title || "Untitled")}</h3>
       <div class="featured-meta">${formatDate(p.created_at)}</div>
+      <div class="featured-author">By ${author}</div>
       <div class="featured-body">${escapeHtml(makePreview(p.body_text || ""))}</div>
       <div class="featured-hint">Click to read</div>
     </article>
@@ -209,11 +240,13 @@ function renderCard(p) {
   const title = escapeHtml(p.title || "Untitled");
   const date = formatDate(p.created_at);
   const preview = makePreview(p.body_text || "");
+  const author = escapeHtml(p.author_name || `User: ${shortUserId(p.user_id)}`);
 
   return `
     <article class="poem-card" data-id="${id}" role="button" tabindex="0" aria-label="Open poem">
       <h3 class="poem-title">${title}</h3>
       <div class="poem-date">${date}</div>
+      <div class="poem-author">By ${author}</div>
       <div class="poem-preview">${escapeHtml(preview)}</div>
     </article>
   `;
@@ -224,6 +257,7 @@ function renderCompactRow(p) {
   const title = escapeHtml(p.title || "Untitled");
   const date = formatDate(p.created_at);
   const bucket = lengthBucket(p.body_text || "");
+  const author = escapeHtml(p.author_name || `User: ${shortUserId(p.user_id)}`);
 
   return `
     <div class="compact-row" data-id="${id}" role="button" tabindex="0" aria-label="Open poem">
@@ -232,6 +266,7 @@ function renderCompactRow(p) {
         <span class="compact-date">${date}</span>
         <span class="compact-pill">${bucket}</span>
       </div>
+      <div class="compact-author">By ${author}</div>
     </div>
   `;
 }
@@ -239,10 +274,10 @@ function renderCompactRow(p) {
 function appendPosts(posts, isFirstPage) {
   if (!listEl || !posts || posts.length === 0) return;
 
-  // Save in local cache for modal
+  posts = posts.map(attachAuthorName);
+
   posts.forEach((p) => loadedMap.set(String(p.id), p));
 
-  // Featured logic: only on first page, only when no search/tag/time/len filter
   const q = (searchInput?.value || "").trim();
   const canFeature =
     isFirstPage &&
@@ -273,7 +308,6 @@ async function fetchPage() {
 
   const lenFilter = lenSel ? lenSel.value : "all";
 
-  // We may need to pull multiple DB pages if length filter removes everything
   let collected = [];
   let tries = 0;
 
@@ -283,6 +317,14 @@ async function fetchPage() {
     let query = buildBaseQuery(supportsTags).range(offset, offset + PAGE_SIZE - 1);
     let res = await query;
 
+    // If profiles join breaks, retry without it
+    if (res.error && supportsProfilesJoin) {
+      supportsProfilesJoin = false;
+      query = buildBaseQuery(supportsTags).range(offset, offset + PAGE_SIZE - 1);
+      res = await query;
+    }
+
+    // If tags breaks, retry without tags
     if (res.error && supportsTags) {
       supportsTags = false;
       if (tagsRow) tagsRow.style.display = "none";
@@ -290,6 +332,13 @@ async function fetchPage() {
 
       query = buildBaseQuery(false).range(offset, offset + PAGE_SIZE - 1);
       res = await query;
+
+      // If still errors because of profiles join, disable that too
+      if (res.error && supportsProfilesJoin) {
+        supportsProfilesJoin = false;
+        query = buildBaseQuery(false).range(offset, offset + PAGE_SIZE - 1);
+        res = await query;
+      }
     }
 
     if (res.error) {
@@ -348,6 +397,7 @@ function ensureModal() {
         <button class="poem-modal-close" type="button" data-close="1" aria-label="Close">Close</button>
       </div>
       <div class="poem-modal-meta" id="poemModalMeta"></div>
+      <div class="poem-modal-author" id="poemModalAuthor"></div>
       <div class="poem-modal-body" id="poemModalBody"></div>
     </div>
   `;
@@ -370,11 +420,15 @@ function openModal(poem) {
   const modal = document.getElementById("poemModal");
   const titleEl = document.getElementById("poemModalTitle");
   const metaEl = document.getElementById("poemModalMeta");
+  const authorEl = document.getElementById("poemModalAuthor");
   const bodyEl = document.getElementById("poemModalBody");
 
-  if (titleEl) titleEl.textContent = poem.title || "Untitled";
-  if (metaEl) metaEl.textContent = formatDate(poem.created_at);
-  if (bodyEl) bodyEl.textContent = poem.body_text || "";
+  const full = attachAuthorName(poem);
+
+  if (titleEl) titleEl.textContent = full.title || "Untitled";
+  if (metaEl) metaEl.textContent = formatDate(full.created_at);
+  if (authorEl) authorEl.textContent = `By ${full.author_name || `User: ${shortUserId(full.user_id)}`}`;
+  if (bodyEl) bodyEl.textContent = full.body_text || "";
 
   modal.classList.add("is-open");
   modal.setAttribute("aria-hidden", "false");
@@ -391,18 +445,24 @@ function closeModal() {
 }
 
 async function fetchSingleById(id) {
-  const { data, error } = await supabase
-    .from("posts")
-    .select("id, title, body_text, created_at")
-    .eq("id", id)
-    .maybeSingle();
+  // Try join first, fallback if it fails
+  let cols = "id, title, body_text, created_at, user_id";
+  if (supportsProfilesJoin) cols += ", profiles (display_name, username, full_name, email)";
 
-  if (error) {
-    setMsg("Error opening poem: " + error.message);
+  let res = await supabase.from("posts").select(cols).eq("id", id).maybeSingle();
+
+  if (res.error && supportsProfilesJoin) {
+    supportsProfilesJoin = false;
+    cols = "id, title, body_text, created_at, user_id";
+    res = await supabase.from("posts").select(cols).eq("id", id).maybeSingle();
+  }
+
+  if (res.error) {
+    setMsg("Error opening poem: " + res.error.message);
     return null;
   }
 
-  return data;
+  return res.data ? attachAuthorName(res.data) : null;
 }
 
 async function handleOpenById(id) {
@@ -500,7 +560,6 @@ function applyAll() {
   fetchPage();
 }
 
-// Wire events safely
 if (loadMoreBtn) loadMoreBtn.addEventListener("click", () => fetchPage());
 if (autoLoadChk) autoLoadChk.addEventListener("change", () => setupInfiniteScroll());
 
