@@ -11,6 +11,7 @@ const bioEl = document.getElementById("profileBio");
 const websiteEl = document.getElementById("profileWebsite");
 
 const avatarBigEl = document.getElementById("profileAvatarBig");
+const avatarFallbackEl = document.getElementById("profileAvatarFallback");
 
 const editBtn = document.getElementById("editBtn");
 const editPanel = document.getElementById("editPanel");
@@ -22,14 +23,8 @@ const inDisplayName = document.getElementById("display_name");
 const inUsername = document.getElementById("username");
 const inBio = document.getElementById("bio");
 const inWebsite = document.getElementById("website");
+const inAvatarUrl = document.getElementById("avatar_url");
 
-const statAll = document.getElementById("statAll");
-const statPoem = document.getElementById("statPoem");
-const statSong = document.getElementById("statSong");
-const statImage = document.getElementById("statImage");
-
-let allPosts = [];
-let activeTab = "all";
 let currentUser = null;
 let currentProfile = null;
 
@@ -41,355 +36,301 @@ function setFeedMsg(text) {
   if (feedMsgEl) feedMsgEl.textContent = text || "";
 }
 
+function setSaving(isSaving) {
+  if (!saveBtn) return;
+  saveBtn.disabled = isSaving;
+  saveBtn.textContent = isSaving ? "Saving..." : "Save";
+}
+
 function escapeHtml(str) {
-  return (str ?? "")
-    .toString()
+  return String(str || "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
-function normalizeUsername(v) {
-  return (v || "")
-    .toString()
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_]/g, "");
-}
-
-function validateUsername(v) {
-  const u = normalizeUsername(v);
-  if (u.length < 3) return "Username must be at least 3 characters.";
-  if (u.length > 24) return "Username must be 24 characters or less.";
-  if (!/^[a-z0-9_]+$/.test(u)) return "Username can only use letters, numbers, underscore.";
-  return "";
-}
-
-function avatarLetter(profile, email) {
-  const src =
-    (profile?.display_name || "").trim() ||
-    (profile?.username || "").trim() ||
-    (email || "").trim();
-  return (src[0] || "U").toUpperCase();
+function safeText(el, value) {
+  if (!el) return;
+  el.textContent = value || "";
 }
 
 function showWebsite(url) {
-  const u = (url || "").trim();
   if (!websiteEl) return;
-
-  if (!u) {
-    websiteEl.style.display = "none";
-    websiteEl.href = "#";
+  const v = (url || "").trim();
+  if (!v) {
     websiteEl.textContent = "";
+    websiteEl.removeAttribute("href");
     return;
   }
-
-  websiteEl.style.display = "inline-block";
-  websiteEl.href = u;
-  websiteEl.textContent = u.replace(/^https?:\/\//, "");
+  websiteEl.textContent = v;
+  websiteEl.href = v;
 }
 
-function paintProfileUI(profile, email) {
-  const disp = (profile?.display_name || "").trim();
-  const uname = (profile?.username || "").trim();
-  const bio = (profile?.bio || "").trim();
+function setAvatar(avatarUrl, displayName, email) {
+  const url = (avatarUrl || "").trim();
+  const fallbackLetter =
+    ((displayName || "").trim()[0] ||
+      (email || "").trim()[0] ||
+      "U").toUpperCase();
 
-  if (displayNameEl) displayNameEl.textContent = disp || "My Profile";
-  if (usernameEl) usernameEl.textContent = uname ? `@${uname}` : "";
-  if (bioEl) bioEl.textContent = bio || "Your submissions and activity live here.";
-  if (emailEl) emailEl.textContent = email || "";
+  if (avatarFallbackEl) avatarFallbackEl.textContent = fallbackLetter;
 
-  showWebsite(profile?.website || "");
+  if (!avatarBigEl) return;
 
-  const letter = avatarLetter(profile, email);
-  if (avatarBigEl) avatarBigEl.textContent = letter;
-
-  if (inDisplayName) inDisplayName.value = disp;
-  if (inUsername) inUsername.value = uname;
-  if (inBio) inBio.value = bio;
-  if (inWebsite) inWebsite.value = (profile?.website || "").trim();
+  if (url) {
+    avatarBigEl.src = url;
+    avatarBigEl.style.display = "block";
+    if (avatarFallbackEl) avatarFallbackEl.style.display = "none";
+    avatarBigEl.onerror = () => {
+      avatarBigEl.removeAttribute("src");
+      avatarBigEl.style.display = "none";
+      if (avatarFallbackEl) avatarFallbackEl.style.display = "flex";
+    };
+  } else {
+    avatarBigEl.removeAttribute("src");
+    avatarBigEl.style.display = "none";
+    if (avatarFallbackEl) avatarFallbackEl.style.display = "flex";
+  }
 }
 
-async function ensureProfile(user) {
-  const { data: existing, error: readErr } = await supabase
+async function requireUser() {
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error) {
+    setMsg("Auth error: " + error.message);
+    return null;
+  }
+
+  if (!data || !data.user) {
+    window.location.href = "login.html";
+    return null;
+  }
+
+  return data.user;
+}
+
+async function loadProfile(user) {
+  setMsg("");
+  setFeedMsg("");
+
+  const { data, error } = await supabase
     .from("profiles")
-    .select("id,username,display_name,bio,website,avatar_url")
+    .select("id, display_name, username, bio, website, avatar_url, updated_at")
     .eq("id", user.id)
     .maybeSingle();
 
-  if (readErr) throw readErr;
-  if (existing) return existing;
-
-  const email = user.email || "";
-  const base = normalizeUsername(email.split("@")[0] || "user") || "user";
-
-  for (let i = 0; i < 6; i++) {
-    const candidate =
-      i === 0 ? base.slice(0, 24) : `${base}${Math.floor(1000 + Math.random() * 9000)}`.slice(0, 24);
-
-    const { data: inserted, error: insErr } = await supabase
-      .from("profiles")
-      .insert({
-        id: user.id,
-        username: candidate,
-        display_name: "",
-        bio: "",
-        website: ""
-      })
-      .select("id,username,display_name,bio,website,avatar_url")
-      .single();
-
-    if (!insErr) return inserted;
+  if (error) {
+    console.error("profiles select error", error);
+    setMsg(
+      "Profile load failed. Make sure you have a 'profiles' table with columns: id, display_name, username, bio, website, avatar_url."
+    );
+    return null;
   }
 
-  return {
-    id: user.id,
-    username: "",
-    display_name: "",
-    bio: "",
-    website: "",
-    avatar_url: ""
-  };
+  // If no row yet, create one so updates always work
+  if (!data) {
+    const baseUsername =
+      (user.email || "user").split("@")[0].replace(/[^a-zA-Z0-9_]/g, "").slice(0, 24) || "user";
+
+    const createPayload = {
+      id: user.id,
+      display_name: "",
+      username: baseUsername,
+      bio: "",
+      website: "",
+      avatar_url: "",
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data: created, error: createErr } = await supabase
+      .from("profiles")
+      .upsert(createPayload, { onConflict: "id" })
+      .select("id, display_name, username, bio, website, avatar_url, updated_at")
+      .single();
+
+    if (createErr) {
+      console.error("profiles upsert create error", createErr);
+      setMsg("Could not create profile row: " + createErr.message);
+      return null;
+    }
+
+    return created;
+  }
+
+  return data;
 }
 
-function typeLabel(t) {
-  if (t === "poem") return "Poetry";
-  if (t === "song") return "Music";
-  if (t === "image") return "Art";
-  return "Post";
+function renderProfile(user, profile) {
+  const dn = (profile.display_name || "").trim();
+  const un = (profile.username || "").trim();
+  const bio = (profile.bio || "").trim();
+  const website = (profile.website || "").trim();
+  const avatarUrl = (profile.avatar_url || "").trim();
+
+  safeText(displayNameEl, dn || "No display name yet");
+  safeText(usernameEl, un ? "@" + un : "@(no username)");
+  safeText(emailEl, user.email || "");
+
+  safeText(bioEl, bio || "No bio yet.");
+  showWebsite(website);
+
+  setAvatar(avatarUrl, dn, user.email || "");
+
+  // preload form values (so edit always reflects current profile)
+  if (inDisplayName) inDisplayName.value = dn;
+  if (inUsername) inUsername.value = un;
+  if (inBio) inBio.value = bio;
+  if (inWebsite) inWebsite.value = website;
+  if (inAvatarUrl) inAvatarUrl.value = avatarUrl;
 }
 
-function setStats(posts) {
-  const poem = posts.filter(p => p.type === "poem").length;
-  const song = posts.filter(p => p.type === "song").length;
-  const image = posts.filter(p => p.type === "image").length;
-
-  if (statAll) statAll.textContent = String(posts.length);
-  if (statPoem) statPoem.textContent = String(poem);
-  if (statSong) statSong.textContent = String(song);
-  if (statImage) statImage.textContent = String(image);
+function openEdit() {
+  if (!editPanel) return;
+  editPanel.style.display = "block";
+  setFeedMsg("");
 }
 
-function renderFeed(posts) {
+function closeEdit() {
+  if (!editPanel) return;
+  editPanel.style.display = "none";
+  setFeedMsg("");
+}
+
+function renderPost(p) {
+  const title = escapeHtml(p.title || "");
+  const date = p.created_at ? new Date(p.created_at).toLocaleString() : "";
+  const status = escapeHtml(p.status || "");
+  const type = escapeHtml(p.type || "");
+
+  let body = "";
+  if (p.type === "poem" && p.body_text) {
+    body = `<div class="body">${escapeHtml(p.body_text).replaceAll("\n", "<br>")}</div>`;
+  }
+  if (p.type === "song" && p.song_url) {
+    const u = escapeHtml(p.song_url);
+    body = `<div class="body"><a href="${u}" target="_blank" rel="noreferrer">${u}</a></div>`;
+  }
+  if (p.type === "image" && p.image_url) {
+    const u = escapeHtml(p.image_url);
+    body = `<div class="body"><img class="post-img" src="${u}" alt="Uploaded artwork"></div>`;
+  }
+
+  return `
+    <div class="post">
+      <h3>${title}</h3>
+      <div class="meta">${date} <span class="pill">${type}</span> <span class="pill pill-muted">${status}</span></div>
+      ${body}
+    </div>
+  `;
+}
+
+async function loadMyPosts(user) {
+  if (!feedEl) return;
+
   feedEl.innerHTML = "";
+  setMsg("");
+  setFeedMsg("Loading your submissions...");
 
-  if (!posts.length) {
-    setFeedMsg("Nothing here yet.");
+  const { data, error } = await supabase
+    .from("posts")
+    .select("id, type, title, body_text, song_url, image_url, status, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("posts select error", error);
+    setFeedMsg("Could not load your submissions: " + error.message);
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    setFeedMsg("No submissions yet.");
     return;
   }
 
   setFeedMsg("");
-
-  const images = posts.filter(p => p.type === "image");
-  const nonImages = posts.filter(p => p.type !== "image");
-
-  if (activeTab === "image" || (activeTab === "all" && images.length)) {
-    const grid = document.createElement("div");
-    grid.className = "profile-grid";
-
-    images.forEach((p) => {
-      const title = escapeHtml(p.title || "Untitled");
-      const created = p.created_at ? new Date(p.created_at).toLocaleString() : "";
-      const url = escapeHtml(p.image_url || "");
-
-      const card = document.createElement("div");
-      card.className = "grid-card";
-      card.innerHTML = `
-        <img src="${url}" alt="${title}">
-        <div class="grid-card-body">
-          <p class="grid-title">${title}</p>
-          <p class="grid-meta">${escapeHtml(created)}</p>
-        </div>
-      `;
-      grid.appendChild(card);
-    });
-
-    feedEl.appendChild(grid);
-  }
-
-  nonImages.forEach((p) => {
-    const title = escapeHtml(p.title || "Untitled");
-    const created = p.created_at ? new Date(p.created_at).toLocaleString() : "";
-    const type = `<span class="badge">${escapeHtml(typeLabel(p.type))}</span>`;
-
-    let bodyHtml = "";
-    if (p.type === "poem") {
-      bodyHtml = `<div class="profile-body">${escapeHtml(p.body_text || "")}</div>`;
-    } else if (p.type === "song") {
-      const url = escapeHtml(p.song_url || "");
-      bodyHtml = url
-        ? `<a class="open-link" href="${url}" target="_blank" rel="noopener noreferrer">Open link</a>`
-        : `<div class="profile-body">No link provided.</div>`;
-    }
-
-    const div = document.createElement("div");
-    div.className = "profile-post";
-    div.innerHTML = `
-      <h3>${title}</h3>
-      <div class="profile-meta">
-        ${type}
-        <span>${escapeHtml(created)}</span>
-      </div>
-      ${bodyHtml}
-    `;
-    feedEl.appendChild(div);
-  });
+  feedEl.innerHTML = data.map(renderPost).join("");
 }
 
-function applyTab() {
-  const filtered =
-    activeTab === "all"
-      ? allPosts
-      : allPosts.filter((p) => p.type === activeTab);
+editBtn?.addEventListener("click", openEdit);
+cancelBtn?.addEventListener("click", closeEdit);
 
-  renderFeed(filtered);
-}
-
-function setupTabs() {
-  const tabs = document.querySelectorAll(".tab");
-  tabs.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      tabs.forEach(t => {
-        t.classList.remove("active");
-        t.setAttribute("aria-selected", "false");
-      });
-
-      btn.classList.add("active");
-      btn.setAttribute("aria-selected", "true");
-
-      activeTab = btn.getAttribute("data-tab") || "all";
-      applyTab();
-    });
-  });
-}
-
-function openEdit() {
-  if (editPanel) editPanel.style.display = "block";
-  setMsg("");
-}
-
-function closeEdit() {
-  if (editPanel) editPanel.style.display = "none";
-  setMsg("");
-}
-
-async function loadMyPosts(userId) {
-  setFeedMsg("Loading...");
-
-  const { data, error } = await supabase
-    .from("posts")
-    .select("id,title,type,created_at,body_text,song_url,image_url")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    setFeedMsg(`Error: ${error.message}`);
-    return;
-  }
-
-  allPosts = data || [];
-  setStats(allPosts);
-  applyTab();
-}
-
-async function requireUser() {
-  const { data } = await supabase.auth.getSession();
-  const session = data?.session;
-
-  if (!session) {
-    window.location.href = "login.html?next=profile.html";
-    return null;
-  }
-
-  return session.user;
-}
-
-async function saveProfile(e) {
+form?.addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!currentUser) return;
 
-  setMsg("");
-
-  if (!saveBtn) {
-    setMsg("Save button not found on page.");
-    return;
-  }
-
-  saveBtn.disabled = true;
+  setSaving(true);
+  setFeedMsg("");
 
   try {
-    const nextDisplay = (inDisplayName?.value || "").trim();
-    const nextUsernameRaw = (inUsername?.value || "").trim();
-    const nextBio = (inBio?.value || "").trim();
-    let nextWebsite = (inWebsite?.value || "").trim();
+    const display_name = (inDisplayName?.value || "").trim();
+    const username = (inUsername?.value || "").trim();
+    const bio = (inBio?.value || "").trim();
+    const website = (inWebsite?.value || "").trim();
+    const avatar_url = (inAvatarUrl?.value || "").trim();
 
-    const normalizedUsername = normalizeUsername(nextUsernameRaw);
-    const usernameErr = validateUsername(normalizedUsername);
-    if (usernameErr) {
-      setMsg(usernameErr);
+    if (username && !/^[a-zA-Z0-9_]{3,40}$/.test(username)) {
+      setFeedMsg("Username must be 3 to 40 characters (letters, numbers, underscore).");
       return;
     }
 
-    // If they typed a website without https, add it so links work
-    if (nextWebsite && !/^https?:\/\//i.test(nextWebsite)) {
-      nextWebsite = `https://${nextWebsite}`;
-    }
+    const payload = {
+      id: currentUser.id,
+      display_name,
+      username,
+      bio,
+      website,
+      avatar_url,
+      updated_at: new Date().toISOString(),
+    };
 
-    const { data: saved, error } = await supabase
+    const { data, error } = await supabase
       .from("profiles")
-      .upsert(
-        {
-          id: currentUser.id,
-          username: normalizedUsername,
-          display_name: nextDisplay,
-          bio: nextBio,
-          website: nextWebsite,
-          updated_at: new Date().toISOString()
-        },
-        { onConflict: "id" }
-      )
-      .select("id,username,display_name,bio,website,avatar_url")
+      .upsert(payload, { onConflict: "id" })
+      .select("id, display_name, username, bio, website, avatar_url, updated_at")
       .single();
 
     if (error) {
-      if (error.code === "23505") {
-        setMsg("That username is taken. Try a different one.");
-      } else {
-        setMsg(`Error: ${error.message}`);
-      }
+      console.error("profiles upsert error", error);
+      setFeedMsg("Save failed: " + error.message);
       return;
     }
 
-    currentProfile = saved;
-    paintProfileUI(currentProfile, currentUser.email || "");
+    currentProfile = data;
+    renderProfile(currentUser, currentProfile);
     closeEdit();
     setMsg("Saved.");
-
-    setTimeout(() => setMsg(""), 900);
   } catch (err) {
-    setMsg(`Error: ${err?.message || err}`);
+    console.error("save exception", err);
+    setFeedMsg("Save failed. Check console for details.");
   } finally {
-    saveBtn.disabled = false;
+    setSaving(false);
   }
+});
+
+async function init() {
+  currentUser = await requireUser();
+  if (!currentUser) return;
+
+  currentProfile = await loadProfile(currentUser);
+  if (!currentProfile) return;
+
+  renderProfile(currentUser, currentProfile);
+  await loadMyPosts(currentUser);
+
+  // keep page in sync if session changes
+  supabase.auth.onAuthStateChange(async (_event, session) => {
+    if (!session || !session.user) {
+      window.location.href = "login.html";
+      return;
+    }
+    currentUser = session.user;
+    currentProfile = await loadProfile(currentUser);
+    if (currentProfile) renderProfile(currentUser, currentProfile);
+    await loadMyPosts(currentUser);
+  });
 }
 
-
-setupTabs();
-
-if (editBtn) editBtn.addEventListener("click", openEdit);
-if (cancelBtn) cancelBtn.addEventListener("click", closeEdit);
-if (form) form.addEventListener("submit", saveProfile);
-
-(async () => {
-  try {
-    currentUser = await requireUser();
-    if (!currentUser) return;
-
-    currentProfile = await ensureProfile(currentUser);
-    paintProfileUI(currentProfile, currentUser.email || "");
-
-    await loadMyPosts(currentUser.id);
-  } catch (err) {
-    setMsg(err?.message || "Error loading profile.");
-  }
-})();
+init();

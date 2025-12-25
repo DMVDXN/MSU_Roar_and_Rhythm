@@ -28,40 +28,37 @@
     </nav>
 
     <div class="topbar-auth">
-  <!-- Logged out -->
-  <div id="authLoggedOut" class="auth-logged-out">
-    <a class="pill pill-ghost" href="login.html">Login</a>
-    <a class="pill pill-solid" href="signup.html">Sign Up</a>
-  </div>
-
-  <!-- Logged in -->
-  <div id="authLoggedIn" class="auth-logged-in" style="display:none;">
-    <a id="profileBtn" class="profile-btn" href="profile.html" aria-label="Profile">
-      <span id="profileAvatar" class="profile-avatar">U</span>
-    </a>
-
-    <button id="menuBtn" class="menu-btn" type="button" aria-label="Menu" aria-expanded="false">
-      <span class="menu-bar"></span>
-      <span class="menu-bar"></span>
-      <span class="menu-bar"></span>
-    </button>
-
-    <div id="menuPanel" class="menu-panel" role="menu" aria-hidden="true">
-      <div class="menu-user">
-        <div class="menu-user-title">Signed in</div>
-        <div id="menuEmail" class="menu-user-email"></div>
+      <div id="authLoggedOut" class="auth-logged-out">
+        <a class="pill pill-ghost" href="login.html">Login</a>
+        <a class="pill pill-solid" href="signup.html">Sign Up</a>
       </div>
 
-      <a class="menu-item" href="profile.html" role="menuitem">Profile</a>
-      <a class="menu-item" href="submit.html" role="menuitem">Submit</a>
+      <div id="authLoggedIn" class="auth-logged-in" style="display:none;">
+        <a id="profileBtn" class="profile-btn" href="profile.html" aria-label="Profile">
+          <span id="profileAvatar" class="profile-avatar">U</span>
+        </a>
 
-      <button id="logoutBtn" class="menu-item danger" type="button" role="menuitem">
-        Logout
-      </button>
+        <button id="menuBtn" class="menu-btn" type="button" aria-label="Menu" aria-expanded="false">
+          <span class="menu-bar"></span>
+          <span class="menu-bar"></span>
+          <span class="menu-bar"></span>
+        </button>
+
+        <div id="menuPanel" class="menu-panel" role="menu" aria-hidden="true">
+          <div class="menu-user">
+            <div class="menu-user-title">Signed in</div>
+            <div id="menuEmail" class="menu-user-email"></div>
+          </div>
+
+          <a class="menu-item" href="profile.html" role="menuitem">Profile</a>
+          <a class="menu-item" href="submit.html" role="menuitem">Submit</a>
+
+          <button id="logoutBtn" class="menu-item danger" type="button" role="menuitem">
+            Logout
+          </button>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
-
   </header>
 
   <main>
@@ -70,8 +67,74 @@
         <h2 class="page-title">Poetry</h2>
         <p class="page-subtitle">Approved submissions appear here.</p>
 
-        <div id="list" class="list"></div>
-        <p id="msg" class="msg"></p>
+        <div id="featuredWrap" class="featured-wrap" style="display:none;"></div>
+
+        <div class="controls">
+          <div class="controls-row">
+            <div class="control">
+              <label for="sortSel">Sort</label>
+              <select id="sortSel">
+                <option value="newest" selected>Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="az">A to Z</option>
+              </select>
+            </div>
+
+            <div class="control">
+              <label for="timeSel">Time</label>
+              <select id="timeSel">
+                <option value="all" selected>All time</option>
+                <option value="day">Today</option>
+                <option value="week">This week</option>
+                <option value="month">This month</option>
+              </select>
+            </div>
+
+            <div class="control">
+              <label for="lenSel">Length</label>
+              <select id="lenSel">
+                <option value="all" selected>All</option>
+                <option value="short">Short</option>
+                <option value="medium">Medium</option>
+                <option value="long">Long</option>
+              </select>
+            </div>
+
+            <div class="control control-wide">
+              <label>View</label>
+              <div class="segmented">
+                <button id="viewCards" type="button" class="seg-btn is-active" data-view="cards">Cards</button>
+                <button id="viewCompact" type="button" class="seg-btn" data-view="compact">Compact</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="tagsRow" class="tags-row" style="display:none;">
+            <div class="tags-title">Tags</div>
+            <div id="tagsChips" class="tags-chips"></div>
+          </div>
+
+          <div class="results-bar">
+            <div id="resultsText" class="results-text"></div>
+            <div class="results-actions">
+              <button id="clearSearchBtn" type="button" class="ghost-btn">Clear search</button>
+
+              <label class="switch">
+                <input id="autoLoadChk" type="checkbox">
+                <span class="switch-ui"></span>
+                <span class="switch-text">Auto load</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div id="list" class="list" data-view="cards"></div>
+
+        <div class="load-area">
+          <button id="loadMoreBtn" type="button" class="load-btn">Load more</button>
+          <div id="sentinel" class="sentinel"></div>
+          <p id="msg" class="msg"></p>
+        </div>
       </div>
     </section>
   </main>
@@ -84,4 +147,3 @@
   <script type="module" src="poetry.js"></script>
 </body>
 </html>
-
