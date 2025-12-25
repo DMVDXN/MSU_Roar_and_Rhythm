@@ -1,0 +1,122 @@
+/* user.css */
+
+.user-wrap {
+  padding: 54px 18px 70px;
+  background: #f7f8fb;
+}
+
+.user-card {
+  max-width: 1080px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 26px 22px;
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+.user-head {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.user-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  background: var(--msu-navy);
+  color: var(--msu-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 1.5rem;
+}
+
+.user-name {
+  margin: 0;
+  color: var(--msu-navy);
+  font-weight: 900;
+  font-size: 1.6rem;
+}
+
+.user-handle {
+  margin-top: 6px;
+  font-weight: 900;
+  color: rgba(0,0,0,0.65);
+}
+
+.user-bio {
+  margin: 10px 0 0;
+  font-weight: 700;
+  color: rgba(0, 45, 114, 0.85);
+}
+
+.user-website {
+  display: inline-block;
+  margin-top: 10px;
+  font-weight: 900;
+  color: var(--msu-orange);
+  text-decoration: none;
+}
+
+.user-website:hover {
+  text-decoration: underline;
+}
+
+.user-tabs {
+  margin-top: 16px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.user-msg {
+  margin-top: 14px;
+  text-align: center;
+  font-weight: 800;
+  color: rgba(0,0,0,0.65);
+}
+
+/* reuse your profile feed styles if you want, but keep it self-contained */
+.user-feed .post {
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 14px;
+  padding: 16px 16px 14px;
+  margin-top: 12px;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.05);
+  background: #ffffff;
+}
+
+.user-feed .post h3 {
+  margin: 0 0 8px;
+  color: var(--msu-navy);
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.user-feed .meta {
+  font-size: 0.95rem;
+  color: rgba(0,0,0,0.55);
+  margin-bottom: 10px;
+}
+
+.user-feed .body {
+  white-space: pre-wrap;
+  line-height: 1.65;
+  color: rgba(0, 45, 114, 0.92);
+  font-size: 1.02rem;
+}
+
+.user-feed .open-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-weight: 900;
+  text-decoration: none;
+  background: var(--msu-orange);
+  color: var(--msu-white);
+  border: 1px solid var(--msu-orange);
+}

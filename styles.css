@@ -377,3 +377,17 @@ header.topbar {
 .menu-item.danger:hover {
   background: rgba(176, 0, 32, 0.08);
 }
+
+.topbar .search-btn {
+  border: none;
+  background: transparent;
+  color: var(--msu-white);
+  cursor: pointer;
+  font-size: 0.95rem;
+  padding: 0;
+  opacity: 0.9;
+}
+
+.topbar .search-btn:hover {
+  opacity: 1;
+}

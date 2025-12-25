@@ -1,0 +1,130 @@
+/* search.css */
+
+.search-wrap {
+  padding: 54px 18px 70px;
+  background: #f7f8fb;
+}
+
+.search-card {
+  max-width: 1080px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 26px 22px;
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+.search-title {
+  margin: 0;
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--msu-navy);
+}
+
+.search-meta {
+  margin: 10px 0 18px;
+  text-align: center;
+  font-weight: 800;
+  color: rgba(0,0,0,0.60);
+}
+
+.search-section {
+  margin: 18px 0 10px;
+  color: var(--msu-navy);
+  font-weight: 900;
+}
+
+.search-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.person {
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 14px;
+  padding: 14px;
+  background: #ffffff;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.05);
+  text-decoration: none;
+  color: inherit;
+}
+
+.person-head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.person-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--msu-navy);
+  color: var(--msu-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+}
+
+.person-name {
+  margin: 0;
+  font-weight: 900;
+  color: var(--msu-navy);
+}
+
+.person-handle {
+  margin-top: 4px;
+  font-weight: 900;
+  color: rgba(0,0,0,0.60);
+}
+
+.search-list .post {
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 14px;
+  padding: 16px 16px 14px;
+  margin-top: 12px;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.05);
+  background: #ffffff;
+}
+
+.search-list .post h3 {
+  margin: 0 0 8px;
+  color: var(--msu-navy);
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+
+.search-list .meta {
+  font-size: 0.95rem;
+  color: rgba(0,0,0,0.55);
+  margin-bottom: 10px;
+}
+
+.search-list .body {
+  white-space: pre-wrap;
+  line-height: 1.65;
+  color: rgba(0, 45, 114, 0.92);
+  font-size: 1.02rem;
+}
+
+.search-msg {
+  margin-top: 14px;
+  text-align: center;
+  font-weight: 800;
+  color: rgba(0,0,0,0.65);
+}
+
+@media (max-width: 900px) {
+  .search-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .search-grid {
+    grid-template-columns: 1fr;
+  }
+}

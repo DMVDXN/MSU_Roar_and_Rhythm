@@ -1,3 +1,4 @@
+/*auth.js*/
 import { supabase } from "./supabase.js";
 
 const signupForm = document.getElementById("signupForm");
@@ -214,3 +215,21 @@ if (signupForm) signupForm.addEventListener("submit", handleSignup);
 if (loginForm) loginForm.addEventListener("submit", handleLogin);
 
 initHeader();
+
+function setupGlobalSearchRedirect() {
+  const forms = document.querySelectorAll("form.topbar-search");
+
+  forms.forEach((form) => {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const input = form.querySelector("input[type='search'], .search-input");
+      const q = (input?.value || "").trim();
+      if (!q) return;
+      window.location.href = `search.html?q=${encodeURIComponent(q)}`;
+    });
+  });
+}
+
+// call it once when auth.js loads
+setupGlobalSearchRedirect();
+
