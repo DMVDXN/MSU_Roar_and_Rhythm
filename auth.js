@@ -32,7 +32,7 @@ async function ensureProfile(user) {
 
   const { data: existing, error: readErr } = await supabase
     .from("profiles")
-    .select("id,username,display_name,bio,website,avatar_url")
+    .select("id,username,display_name")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -48,14 +48,11 @@ async function ensureProfile(user) {
     const { data: inserted, error: insErr } = await supabase
       .from("profiles")
       .insert({
-  id: user.id,
-  username: candidate,
-  display_name: candidate,
-  bio: "",
-  website: ""
-})
-
-      .select("id,username,display_name,bio,website,avatar_url")
+        id: user.id,
+        username: candidate,
+        display_name: candidate
+      })
+      .select("id,username,display_name")
       .single();
 
     if (!insErr) return inserted;
@@ -171,22 +168,21 @@ async function handleSignup(e) {
   setMsg("Creating account...");
 
   const usernameEl = document.getElementById("username");
-const username = (usernameEl ? usernameEl.value : "").trim();
+  const username = (usernameEl ? usernameEl.value : "").trim();
 
-const email = document.getElementById("email").value.trim();
-const password = document.getElementById("password").value;
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
 
-const { data, error } = await supabase.auth.signUp({
-  email,
-  password,
-  options: {
-    data: {
-      username: username || null,
-      display_name: username || null
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        username: username || null,
+        display_name: username || null
+      }
     }
-  }
-});
-
+  });
 
   if (error) {
     setMsg(error.message);
@@ -246,4 +242,3 @@ function setupGlobalSearchRedirect() {
 
 // call it once when auth.js loads
 setupGlobalSearchRedirect();
-
