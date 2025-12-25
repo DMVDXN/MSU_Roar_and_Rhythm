@@ -5,6 +5,11 @@
   --msu-white: #ffffff;
 }
 
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+
 /* Prevent huge images */
 img {
   max-width: 100%;
@@ -15,6 +20,8 @@ img {
 /* Basic page */
 html, body {
   height: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -49,8 +56,9 @@ header.topbar {
   text-align: left;
 
   width: 100%;
+  box-sizing: border-box;
   display: grid;
-  grid-template-columns: auto minmax(240px, 1fr) auto auto;
+  grid-template-columns: auto minmax(240px, 520px) 1fr auto;
   align-items: center;
   gap: 16px;
 }
@@ -86,7 +94,7 @@ header.topbar {
   max-width: 760px;
 
   display: flex;
-  align-items: center;
+  align-items: start;
   gap: 10px;
 
   background: rgba(255, 255, 255, 0.14);
@@ -120,6 +128,7 @@ header.topbar {
 /* Nav */
 .topbar .topbar-nav {
   justify-self: end;
+  min-width: 0;
 
   display: flex;
   align-items: center;
