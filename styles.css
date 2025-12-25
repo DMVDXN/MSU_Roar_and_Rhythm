@@ -90,8 +90,9 @@ header.topbar {
 
 /* Search */
 .topbar .topbar-search {
-  flex: 0 1 760px;
-  max-width: 760px;
+  flex: 1 1 520px;
+  max-width: 520px;
+  min-width: 260px;
   min-width: 260px;
 
   display: flex;
@@ -182,14 +183,27 @@ header.topbar {
 
 /* Responsive */
 @media (max-width: 900px) {
-  .topbar .topbar-search {
-    flex: 0 1 420px;
-    max-width: 420px;
-    min-width: 220px;
+  header.topbar {
+    flex-wrap: wrap;
   }
 
   .topbar .brand {
+    min-width: auto;
+  }
+
+  /* default: hide search on mobile */
+  .topbar .topbar-search {
+    display: none;
+  }
+
+  /* Poetry page only: show search on its own row */
+  body.search-mobile .topbar .topbar-search {
+    display: flex;
+    order: 3;
+    flex: 1 1 100%;
+    max-width: none;
     min-width: 0;
+    width: 100%;
   }
 }
 
