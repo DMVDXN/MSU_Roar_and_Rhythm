@@ -10,14 +10,18 @@
   margin: 0 auto;
   background: #ffffff;
   border-radius: 18px;
-  padding: 26px 22px;
+  padding: 26px 22px 22px;
   border: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.05);
 }
 
+/* Header */
 .user-head {
   display: flex;
   gap: 16px;
   align-items: center;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(0,0,0,0.07);
 }
 
 .user-avatar {
@@ -30,26 +34,33 @@
   align-items: center;
   justify-content: center;
   font-weight: 900;
-  font-size: 1.5rem;
+  font-size: 1.6rem;
+  flex: 0 0 auto;
+}
+
+.user-info {
+  min-width: 0;
 }
 
 .user-name {
   margin: 0;
   color: var(--msu-navy);
   font-weight: 900;
-  font-size: 1.6rem;
+  font-size: 1.8rem;
+  line-height: 1.1;
 }
 
 .user-handle {
   margin-top: 6px;
   font-weight: 900;
-  color: rgba(0,0,0,0.65);
+  color: rgba(0,0,0,0.60);
 }
 
 .user-bio {
   margin: 10px 0 0;
   font-weight: 700;
-  color: rgba(0, 45, 114, 0.85);
+  color: rgba(0, 45, 114, 0.88);
+  line-height: 1.5;
 }
 
 .user-website {
@@ -64,28 +75,56 @@
   text-decoration: underline;
 }
 
+/* Tabs */
 .user-tabs {
-  margin-top: 16px;
+  margin-top: 14px;
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
 }
 
+.user-tabs .tab {
+  border: 1px solid rgba(0, 45, 114, 0.22);
+  background: #ffffff;
+  color: var(--msu-navy);
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-weight: 900;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.user-tabs .tab:hover {
+  border-color: rgba(0, 45, 114, 0.35);
+  filter: brightness(1.02);
+}
+
+.user-tabs .tab.active {
+  background: var(--msu-navy);
+  color: var(--msu-white);
+  border-color: var(--msu-navy);
+}
+
+/* Messages */
 .user-msg {
-  margin-top: 14px;
+  margin: 18px 0 0;
   text-align: center;
   font-weight: 800;
   color: rgba(0,0,0,0.65);
 }
 
-/* reuse your profile feed styles if you want, but keep it self-contained */
+/* Feed */
+.user-feed {
+  margin-top: 14px;
+}
+
 .user-feed .post {
   border: 1px solid rgba(0,0,0,0.08);
   border-radius: 14px;
   padding: 16px 16px 14px;
   margin-top: 12px;
-  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.05);
   background: #ffffff;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.04);
 }
 
 .user-feed .post h3 {
@@ -108,6 +147,13 @@
   font-size: 1.02rem;
 }
 
+.user-feed img {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
 .user-feed .open-link {
   display: inline-flex;
   align-items: center;
@@ -119,4 +165,22 @@
   background: var(--msu-orange);
   color: var(--msu-white);
   border: 1px solid var(--msu-orange);
+}
+
+.user-feed .open-link:hover {
+  filter: brightness(1.04);
+}
+
+@media (max-width: 600px) {
+  .user-head {
+    align-items: flex-start;
+  }
+  .user-avatar {
+    width: 60px;
+    height: 60px;
+    font-size: 1.35rem;
+  }
+  .user-name {
+    font-size: 1.55rem;
+  }
 }

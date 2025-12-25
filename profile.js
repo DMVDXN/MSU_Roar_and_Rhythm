@@ -309,52 +309,70 @@ async function saveProfile(e) {
   if (!currentUser) return;
 
   setMsg("");
+
+  if (!saveBtn) {
+    setMsg("Save button not found on page.");
+    return;
+  }
+
   saveBtn.disabled = true;
 
-  const nextDisplay = (inDisplayName?.value || "").trim();
-  const nextUsernameRaw = (inUsername?.value || "").trim();
-  const nextBio = (inBio?.value || "").trim();
-  const nextWebsite = (inWebsite?.value || "").trim();
+  try {
+    const nextDisplay = (inDisplayName?.value || "").trim();
+    const nextUsernameRaw = (inUsername?.value || "").trim();
+    const nextBio = (inBio?.value || "").trim();
+    let nextWebsite = (inWebsite?.value || "").trim();
 
-  const normalizedUsername = normalizeUsername(nextUsernameRaw);
-  const usernameErr = validateUsername(normalizedUsername);
-  if (usernameErr) {
-    setMsg(usernameErr);
-    saveBtn.disabled = false;
-    return;
-  }
-
-  const { data: saved, error } = await supabase
-    .from("profiles")
-    .upsert({
-      id: currentUser.id,
-      username: normalizedUsername,
-      display_name: nextDisplay,
-      bio: nextBio,
-      website: nextWebsite,
-      updated_at: new Date().toISOString()
-    }, { onConflict: "id" })
-    .select("id,username,display_name,bio,website,avatar_url")
-    .single();
-
-  if (error) {
-    if (error.code === "23505") {
-      setMsg("That username is taken. Try a different one.");
-    } else {
-      setMsg(`Error: ${error.message}`);
+    const normalizedUsername = normalizeUsername(nextUsernameRaw);
+    const usernameErr = validateUsername(normalizedUsername);
+    if (usernameErr) {
+      setMsg(usernameErr);
+      return;
     }
+
+    // If they typed a website without https, add it so links work
+    if (nextWebsite && !/^https?:\/\//i.test(nextWebsite)) {
+      nextWebsite = `https://${nextWebsite}`;
+    }
+
+    const { data: saved, error } = await supabase
+      .from("profiles")
+      .upsert(
+        {
+          id: currentUser.id,
+          username: normalizedUsername,
+          display_name: nextDisplay,
+          bio: nextBio,
+          website: nextWebsite,
+          updated_at: new Date().toISOString()
+        },
+        { onConflict: "id" }
+      )
+      .select("id,username,display_name,bio,website,avatar_url")
+      .single();
+
+    if (error) {
+      if (error.code === "23505") {
+        setMsg("That username is taken. Try a different one.");
+      } else {
+        setMsg(`Error: ${error.message}`);
+      }
+      return;
+    }
+
+    currentProfile = saved;
+    paintProfileUI(currentProfile, currentUser.email || "");
+    closeEdit();
+    setMsg("Saved.");
+
+    setTimeout(() => setMsg(""), 900);
+  } catch (err) {
+    setMsg(`Error: ${err?.message || err}`);
+  } finally {
     saveBtn.disabled = false;
-    return;
   }
-
-  currentProfile = saved;
-  paintProfileUI(currentProfile, currentUser.email || "");
-  closeEdit();
-  setMsg("Saved.");
-  saveBtn.disabled = false;
-
-  setTimeout(() => setMsg(""), 900);
 }
+
 
 setupTabs();
 
