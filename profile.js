@@ -31,6 +31,12 @@ const statImageEl = document.getElementById("statImage");
 
 const tabBtns = Array.from(document.querySelectorAll(".profile-tabs .tab"));
 
+const changePasswordForm = document.getElementById("changePasswordForm");
+const changePasswordBtn = document.getElementById("changePasswordBtn");
+const passwordMsgEl = document.getElementById("passwordMsg");
+const newPasswordEl = document.getElementById("newPassword");
+const confirmNewPasswordEl = document.getElementById("confirmNewPassword");
+
 let currentUser = null;
 let currentProfile = null;
 
@@ -45,10 +51,20 @@ function setFeedMsg(text) {
   if (feedMsgEl) feedMsgEl.textContent = text || "";
 }
 
+function setPasswordMsg(text) {
+  if (passwordMsgEl) passwordMsgEl.textContent = text || "";
+}
+
 function setSaving(isSaving) {
   if (!saveBtn) return;
   saveBtn.disabled = isSaving;
   saveBtn.textContent = isSaving ? "Saving..." : "Save";
+}
+
+function setPasswordSaving(isSaving) {
+  if (!changePasswordBtn) return;
+  changePasswordBtn.disabled = isSaving;
+  changePasswordBtn.textContent = isSaving ? "Updating..." : "Update Password";
 }
 
 function escapeHtml(str) {
@@ -101,12 +117,16 @@ function openEdit() {
   if (!editPanel) return;
   editPanel.style.display = "block";
   setFeedMsg("");
+  setPasswordMsg("");
 }
 
 function closeEdit() {
   if (!editPanel) return;
   editPanel.style.display = "none";
   setFeedMsg("");
+  setPasswordMsg("");
+
+  if (changePasswordForm) changePasswordForm.reset();
 }
 
 async function requireUser() {
@@ -145,7 +165,6 @@ async function loadProfile(user) {
 
   if (data) return data;
 
-  // Create one if missing
   const baseUsername =
     (user.email || "user")
       .split("@")[0]
@@ -191,7 +210,6 @@ function renderProfile(user, profile) {
 
   setAvatarLetter(dn || un, user.email || "");
 
-  // preload form values
   if (inDisplayName) inDisplayName.value = dn;
   if (inUsername) inUsername.value = un;
   if (inBio) inBio.value = bio;
@@ -496,6 +514,52 @@ async function handleToggleHide(post) {
   await loadMyPosts(currentUser);
 }
 
+async function handleChangePassword(e) {
+  e.preventDefault();
+  if (!currentUser) return;
+
+  const newPassword = (newPasswordEl?.value || "").trim();
+  const confirmNewPassword = (confirmNewPasswordEl?.value || "").trim();
+
+  setPasswordMsg("");
+
+  if (!newPassword || !confirmNewPassword) {
+    setPasswordMsg("Please fill out both password fields.");
+    return;
+  }
+
+  if (newPassword.length < 6) {
+    setPasswordMsg("Password must be at least 6 characters.");
+    return;
+  }
+
+  if (newPassword !== confirmNewPassword) {
+    setPasswordMsg("Passwords do not match.");
+    return;
+  }
+
+  setPasswordSaving(true);
+
+  try {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+
+    if (error) {
+      setPasswordMsg("Password update failed: " + error.message);
+      return;
+    }
+
+    setPasswordMsg("Password updated successfully.");
+    if (changePasswordForm) changePasswordForm.reset();
+  } catch (err) {
+    console.error("password update exception", err);
+    setPasswordMsg("Password update failed. Check console for details.");
+  } finally {
+    setPasswordSaving(false);
+  }
+}
+
 function setupFeedActions() {
   if (!feedEl) return;
 
@@ -532,6 +596,7 @@ function setupFeedActions() {
 
 editBtn?.addEventListener("click", openEdit);
 cancelBtn?.addEventListener("click", closeEdit);
+changePasswordForm?.addEventListener("submit", handleChangePassword);
 
 tabBtns.forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -603,7 +668,6 @@ async function init() {
   renderProfile(currentUser, currentProfile);
   await loadMyPosts(currentUser);
 
-  // default tab
   setActiveTab("all");
 
   supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -611,6 +675,7 @@ async function init() {
       window.location.href = "login.html";
       return;
     }
+
     currentUser = session.user;
 
     currentProfile = await loadProfile(currentUser);

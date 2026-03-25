@@ -118,6 +118,29 @@
 
             <p id="profileMsg" class="profile-msg"></p>
           </form>
+
+          <section class="password-panel">
+            <h3 class="password-title">Change Password</h3>
+            <p class="password-subtitle">Update your password while signed in.</p>
+
+            <form id="changePasswordForm" class="edit-form">
+              <div class="field">
+                <label for="newPassword">New Password</label>
+                <input id="newPassword" type="password" minlength="6" required autocomplete="new-password" placeholder="Enter new password">
+              </div>
+
+              <div class="field">
+                <label for="confirmNewPassword">Confirm New Password</label>
+                <input id="confirmNewPassword" type="password" minlength="6" required autocomplete="new-password" placeholder="Confirm new password">
+              </div>
+
+              <div class="edit-actions">
+                <button id="changePasswordBtn" class="btn btn-solid" type="submit">Update Password</button>
+              </div>
+
+              <p id="passwordMsg" class="profile-msg"></p>
+            </form>
+          </section>
         </div>
 
         <div class="profile-stats">
