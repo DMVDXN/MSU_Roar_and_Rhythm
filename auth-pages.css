@@ -93,3 +93,20 @@
 .auth-link a:hover {
   color: var(--msu-orange);
 }
+
+
+.auth-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin: 8px 0 14px;
+}
+
+.forgot-link {
+  font-size: 0.95rem;
+  color: #1d4ed8;
+  text-decoration: none;
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
+}
